@@ -211,6 +211,12 @@ int main(void) {
     static absolute_time_t next_wifi_retry = {0}, next_mqtt_retry = {0};
 
     while (true) {
+
+        if (!sd_mount && !sd_open) {
+            sd_mount = microsd_mount();
+            sd_open = microsd_open();
+            sleep_ms(3000);
+        }
         // -------- Coleta AHT10 + OLED (formatação manual com separador vírgula) --------
         if (absolute_time_diff_us(get_absolute_time(), next_sample) <= 0) {
             next_sample = make_timeout_time_ms(SAMPLE_MS);
