@@ -22,8 +22,8 @@
 #include "mqtt.h"
 
 // ----------------- CONFIG Wi-Fi / MQTT -----------------
-#define WIFI_SSID      "DarciRaul_2G"
-#define WIFI_PASS      "40710413"
+#define WIFI_SSID      "Galaxy_A03"
+#define WIFI_PASS      "70468657444"
 #define BROKER_IP      "200.137.1.176"
 #define MQTT_USER      "desafio05"
 #define MQTT_PASS      "desafio05.laica"
@@ -157,7 +157,7 @@ static void on_puback(void) {
 
 int main(void) {
     stdio_init_all();
-    sleep_ms(500);
+    sleep_ms(10000);
 
     // LED GREEN
     setup_ledg();
@@ -274,6 +274,7 @@ int main(void) {
             n = (q_count < BATCH_MAX) ? q_count : BATCH_MAX;
             len = build_batch_json(payload, sizeof(payload), n);
             if (sd_mount && sd_open) {
+                strcat(payload, "\r\n");
                 microsd_write(payload);
             }
         }

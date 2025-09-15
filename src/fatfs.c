@@ -47,18 +47,18 @@ bool microsd_mount() {
         printf("Erro ao montar micro SD: %d\n", fr);
         return false;
     } else {
-        printf("Micro SD montado com sucesso!");
+        printf("Micro SD montado com sucesso!\n");
         return true;
     }
 }
 
 bool microsd_open() {
-    fr = f_open(&file, "log.txt", FA_WRITE | FA_OPEN_APPEND);
+    fr = f_open(&file, "temp.txt", FA_WRITE | FA_OPEN_APPEND);
     if (fr != FR_OK) {
-        printf("Erro ao abrir arquivo log.txt: %d\n", fr);
+        printf("Erro ao abrir arquivo temp.txt: %d\n", fr);
         return false;
     } else {
-        printf("Arquivo log.txt aberto com sucesso!\n");
+        printf("Arquivo temp.txt aberto com sucesso!\n");
         return true;
     }
 }
@@ -66,11 +66,11 @@ bool microsd_open() {
 void microsd_write(const char *payload) {
     fr = f_write(&file, payload, strlen(payload), &bytes_written);
     if (fr != FR_OK) {
-        printf("Erro ao gravar no arquivo log.txt: %d\n", fr);
+        printf("Erro ao gravar no arquivo temp.txt: %d\n", fr);
     } else {
-        printf("Foram gravados %u bytes em log.txt!\n", bytes_written);
+        printf("Foram gravados %u bytes em temp.txt!\n", bytes_written);
         gpio_put(LED_G, 1);
-        sleep_ms(200);
+        sleep_ms(100);
         gpio_put(LED_G, 0);
     }
     f_sync(&file);
