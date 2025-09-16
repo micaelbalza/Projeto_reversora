@@ -11,6 +11,9 @@
 #include "hardware/i2c.h"
 #include "pico/cyw43_arch.h"
 
+// FATFS
+#include "fatfs.h"
+
 #include "inc/ssd1306.h"
 #include "aht10.h"
 
@@ -19,8 +22,8 @@
 #include "mqtt.h"
 
 // ----------------- CONFIG Wi-Fi / MQTT -----------------
-#define WIFI_SSID      "AndroidAPda822"
-#define WIFI_PASS      "1s22s22p6"
+#define WIFI_SSID      "Galaxy_A03"
+#define WIFI_PASS      "70468657444"
 #define BROKER_IP      "200.137.1.176"
 #define MQTT_USER      "desafio05"
 #define MQTT_PASS      "desafio05.laica"
@@ -154,7 +157,15 @@ static void on_puback(void) {
 
 int main(void) {
     stdio_init_all();
-    sleep_ms(500);
+    sleep_ms(10000);
+
+    // LED GREEN
+    setup_ledg();
+    // SPI
+    setup_spi();
+    // FATFS
+    bool sd_mount = microsd_mount();
+    bool sd_open = microsd_open();
 
     // OLED
     oled_setup();
@@ -200,6 +211,12 @@ int main(void) {
     static absolute_time_t next_wifi_retry = {0}, next_mqtt_retry = {0};
 
     while (true) {
+
+        if (!sd_mount && !sd_open) {
+            sd_mount = microsd_mount();
+            sd_open = microsd_open();
+            sleep_ms(3000);
+        }
         // -------- Coleta AHT10 + OLED (formatação manual com separador vírgula) --------
         if (absolute_time_diff_us(get_absolute_time(), next_sample) <= 0) {
             next_sample = make_timeout_time_ms(SAMPLE_MS);
@@ -256,11 +273,18 @@ int main(void) {
         }
 
         // -------- Envio do próximo lote --------
+        uint16_t n;
+        int len = 0;
+        bool time_to_flush = (absolute_time_diff_us(get_absolute_time(), next_flush) <= 0);
+        if ((q_count >= BATCH_MAX) || (q_count > 0 && time_to_flush)) {
+            n = (q_count < BATCH_MAX) ? q_count : BATCH_MAX;
+            len = build_batch_json(payload, sizeof(payload), n);
+            if (sd_mount && sd_open) {
+                strcat(payload, "\r\n");
+                microsd_write(payload);
+            }
+        }
         if (mqtt_is_connected() && !mqtt_publish_inflight()) {
-            bool time_to_flush = (absolute_time_diff_us(get_absolute_time(), next_flush) <= 0);
-            if ((q_count >= BATCH_MAX) || (q_count > 0 && time_to_flush)) {
-                uint16_t n = (q_count < BATCH_MAX) ? q_count : BATCH_MAX;
-                int len = build_batch_json(payload, sizeof(payload), n);
                 if (len > 0) {
                     err_t st = mqtt_comm_publish(TOPIC_POT, (const uint8_t*)payload, (size_t)len);
                     if (st == ERR_OK) {
@@ -275,7 +299,6 @@ int main(void) {
                     if (n > 1) next_flush = make_timeout_time_ms(500);
                 }
             }
-        }
 
         sleep_ms(10);
     }

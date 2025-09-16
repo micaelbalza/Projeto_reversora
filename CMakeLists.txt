@@ -30,6 +30,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Inicializa o SDK
 pico_sdk_init()
 
+# ENCONTRAR BIBLIOTECA DO FATFS
+add_subdirectory(${CMAKE_SOURCE_DIR}/../pico_fatfs pico_fatfs_build)
+
 # ---------- Descoberta de fontes ----------
 # (usa raiz ou src/ dependendo do que existir)
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/src/mqtt.c)
@@ -56,6 +59,7 @@ endif()
 add_executable(pot_mqtt
     pot_mqtt.c
     inc/ssd1306_i2c.c
+    src/fatfs.c # módulo para leitura e persistência com micro SD
     ${MQTT_SRC}
     ${WIFI_SRC}
     ${AHT10_SRC}          # << incluímos o driver do AHT10
@@ -94,6 +98,7 @@ target_link_libraries(pot_mqtt
     hardware_i2c
     hardware_clocks
     pico_cyw43_arch_lwip_threadsafe_background
+    pico_fatfs # BIBLIOTECA PARA ARMAZENAMENTO COM MICRO SD
 )
 
 # MQTT do lwIP (se existir nesse SDK)
