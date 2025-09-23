@@ -12,6 +12,11 @@
 #include "hardware/i2c.h"
 #include "pico/cyw43_arch.h"
 
+#include "hardware/gpio.h"
+#include "lwip/dns.h"
+#include "lwip/pbuf.h"
+#include "lwip/udp.h"
+
 // FATFS
 #include "fatfs.h"
 
@@ -50,13 +55,12 @@
 #define OLED_WIDTH     128
 #define OLED_HEIGHT    32
 
+// TODO: passar todo esse codigo do ds3231 para uma lib e organizar o codigo
 // Configurações I2C DS3231
-// TODO: configurar para os pinos i2c1, ja que o aht esta no i2c0
 #define I2C_PORT_DS3231 i2c1
 #define I2C_SDA_PIN_DS3231 2
 #define I2C_SCL_PIN_DS3231 3
 #define I2C_BAUDRATE_DS3231 100000
-
 
 // Registradores do DS3231
 #define DS3231_I2C_ADDRESS 0x68
@@ -196,14 +200,15 @@ void generate_timestamp(char *buffer, size_t buffer_size) {
     rtc_datetime_t current_time;
     ds3231_get_datetime(&current_time);
 
-    char s_data[20];
-    char s_tempo[20];
+    // char s_timestamp[25];
+    // char s_tempo[20];
 
     // sprintf(s_data, "%d/%d/%d", current_time.date, current_time.month, current_time.year);
-    snprintf(s_data, sizeof(s_data), "data %02d %02d %02d", current_time.date,
-              current_time.month, current_time.year);
-    snprintf(s_tempo, sizeof(s_tempo), "hora %02d %02d %02d", current_time.hours,
-              current_time.minutes, current_time.seconds);
+    // snprintf(s_timestamp, sizeof(s_timestamp), "%02d-%02d-%02d %02d:%02d%02d", current_time.date,
+    //           current_time.month, current_time.year, current_time.hours,
+    //           current_time.minutes, current_time.seconds);
+    // snprintf(s_tempo, sizeof(s_tempo), "%02d:%02d:%02d", current_time.hours,
+    //           current_time.minutes, current_time.seconds);
 
     // TODO: passar essas variaveis para a variavel timestamp no json que sera enviado via mqtt
     // char *showing_text[] = {
@@ -214,9 +219,9 @@ void generate_timestamp(char *buffer, size_t buffer_size) {
     // show_message_oled(showing_text,2);
     
     // Formato: YYYY-MM-DD HH:MM:SS
-    snprintf(buffer, buffer_size, "20%02d-%02d-%02d %02d:%02d:%02d",
-             current_time.year, current_time.month, current_time.date,
-             current_time.hours, current_time.minutes, current_time.seconds);
+    snprintf(buffer, buffer_size, "%02d-%02d-%02d %02d:%02d:%02d",
+             current_time.date, current_time.month,  current_time.year,
+             current_time.seconds, current_time.minutes, current_time.hours);
 }
 // *** FIM do trecho do codigo para uso do ds3231
 
@@ -392,7 +397,7 @@ static void show_message_oled(char* message[], int lines) {
 
 // ----------------- Fila circular de amostras -----------------
 typedef struct {
-    uint32_t ts_ms;   // timestamp desde boot (ms)
+    char ts_ms[32];   // timestamp desde boot (ms)
     float    temp_c;  // °C
     float    rh_pct;  // %UR
 } Sample;
@@ -402,7 +407,10 @@ static uint16_t q_head     = 0;   // índice do 1º válido
 static uint16_t q_count    = 0;   // quantos válidos
 static uint16_t pending_n  = 0;   // itens do lote aguardando PUBACK
 
-static inline uint32_t now_ms(void) { return to_ms_since_boot(get_absolute_time()); }
+static inline uint32_t now_ms(void) { 
+    return to_ms_since_boot(get_absolute_time()); 
+
+}
 
 static void q_push(const Sample *s) {
     if (q_count == QUEUE_CAP) { q_head = (q_head + 1) % QUEUE_CAP; q_count--; }
@@ -429,9 +437,9 @@ static int build_batch_json(char *out, size_t outsz, uint16_t n) {
     for (uint16_t i = 0; i < n; i++) {
         const Sample *s = &qbuf[idx];
         w = snprintf(out + used, outsz - used,
-                     "%s{\"t\":%u,\"tc\":%.2f,\"rh\":%.2f}",
+                     "%s{\"t\":%s,\"tc\":%.2f,\"rh\":%.2f}",
                      (i ? "," : ""),
-                     (unsigned)s->ts_ms, s->temp_c, s->rh_pct);
+                     s->ts_ms, s->temp_c, s->rh_pct);
         if (w <= 0 || (size_t)w >= (outsz - used)) return -1;
         used += (size_t)w;
         idx = (idx + 1) % QUEUE_CAP;
@@ -464,7 +472,7 @@ static void on_puback(void) {
 
 int main(void) {
     stdio_init_all();
-    sleep_ms(10000);
+    sleep_ms(1000);
 
     // LED GREEN
     setup_ledg();
@@ -476,6 +484,20 @@ int main(void) {
 
     // OLED
     oled_setup();
+
+    // cliente ntp
+    ntp_init();
+
+    // inicializacao ds3231
+    init_i2c_ds3231();
+     // Aguardar um pouco para estabilizar
+    sleep_ms(1000);
+    
+    // Inicializar DS3231
+    if (!ds3231_init()) {
+        printf("Falha ao inicializar DS3231. Verifique as conexões.\n");
+        return -1;
+    }
 
     // AHT10 em I2C0 (GPIO0/1)
     if (!aht10_init(AHT_I2C_INST, AHT_I2C_SDA, AHT_I2C_SCL)) {
@@ -530,7 +552,13 @@ int main(void) {
 
             float tc = 0.0f, rh = 0.0f;
             if (aht10_read(AHT_I2C_INST, &tc, &rh)) {
-                Sample s = { .ts_ms = now_ms(), .temp_c = tc, .rh_pct = rh };
+                char timestamp[31];
+                generate_timestamp(timestamp, sizeof(timestamp));
+                Sample s;
+                // = { .ts_ms = timestamp, .temp_c = tc, .rh_pct = rh }
+                strcpy(s.ts_ms, timestamp);
+                s.temp_c = tc;
+                s.rh_pct = rh;
                 q_push(&s);
 
                 // T: xx,xxC (2 casas)
