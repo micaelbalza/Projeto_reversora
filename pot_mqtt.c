@@ -28,8 +28,8 @@
 #include "mqtt.h"
 
 // ----------------- CONFIG Wi-Fi / MQTT -----------------
-#define WIFI_SSID      "VIVOFIBRA-71C8"
-#define WIFI_PASS      "1EEA618025"
+#define WIFI_SSID      "NOME_DA_REDE_WIFI"
+#define WIFI_PASS      "PASSWORD_DA_REDE_WIFI"
 #define BROKER_IP      "200.137.1.176"
 #define MQTT_USER      "desafio05"
 #define MQTT_PASS      "desafio05.laica"
@@ -163,7 +163,7 @@ bool ds3231_init() {
     
     printf("DS3231 conectado com sucesso!\n");    
     // Configurar registrador de controle (desabilitar alarmes, habilitar oscilador)
-    ds3231_write_register(DS3231_REG_CONTROL, 0x00);
+    // ds3231_write_register(DS3231_REG_CONTROL, 0x00);
     
     return true;
 }
@@ -496,10 +496,10 @@ int main(void) {
 
     // AHT10 em I2C0 (GPIO0/1)
     if (!aht10_init(AHT_I2C_INST, AHT_I2C_SDA, AHT_I2C_SCL)) {
-        printf("[AHT10] Falha ao inicializar (I2C0 SDA=%d, SCL=%d)\n",
+        printf("[AHT10] Falha ao inicializar (I2C1 SDA=%d, SCL=%d)\n",
                AHT_I2C_SDA, AHT_I2C_SCL);
     } else {
-        printf("[AHT10] OK (I2C0)\n");
+        printf("[AHT10] OK (I2C1)\n");
     }
 
     // Wi-Fi (primeira tentativa)
