@@ -63,9 +63,9 @@
 #define LINK_STATS                     0
 
 #ifndef NDEBUG
-  #define LWIP_DEBUG                   0   // mude p/ 1 se quiser logs do lwIP
-  #define LWIP_STATS                   0
-  #define LWIP_STATS_DISPLAY           0
+  #define LWIP_DEBUG                   1   // mude p/ 1 se quiser logs do lwIP
+  #define LWIP_STATS                   1
+  #define LWIP_STATS_DISPLAY           1
 #endif
 
 // (mantém tudo de debug específico em OFF)

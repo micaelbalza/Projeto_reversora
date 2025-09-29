@@ -28,8 +28,8 @@
 #include "mqtt.h"
 
 // ----------------- CONFIG Wi-Fi / MQTT -----------------
-#define WIFI_SSID      "Galaxy_A03"
-#define WIFI_PASS      "70468657444"
+#define WIFI_SSID      "VIVOFIBRA-71C8"
+#define WIFI_PASS      "1EEA618025"
 #define BROKER_IP      "200.137.1.176"
 #define MQTT_USER      "desafio05"
 #define MQTT_PASS      "desafio05.laica"
@@ -40,13 +40,13 @@
 #define QUEUE_CAP      256
 #define BATCH_MAX      12
 #define FLUSH_MS       8000
-#define SAMPLE_MS      500
+#define SAMPLE_MS      1000
 
 // ----------------- I2C -----------------
 // AHT10 em I2C0 (BitDog: SDA0=GPIO0, SCL0=GPIO1)
-#define AHT_I2C_INST   i2c0
-#define AHT_I2C_SDA    0
-#define AHT_I2C_SCL    1
+#define AHT_I2C_INST   i2c1
+#define AHT_I2C_SDA    2
+#define AHT_I2C_SCL    3
 
 // OLED em I2C1 (fisicamente nos GPIO14/15)
 #define OLED_I2C_INST  i2c1
@@ -57,9 +57,12 @@
 
 // TODO: passar todo esse codigo do ds3231 para uma lib e organizar o codigo
 // Configurações I2C DS3231
-#define I2C_PORT_DS3231 i2c1
-#define I2C_SDA_PIN_DS3231 2
-#define I2C_SCL_PIN_DS3231 3
+#define I2C_PORT_DS3231 i2c0
+#define I2C_SDA_PIN_DS3231 0
+#define I2C_SCL_PIN_DS3231 1
+// #define I2C_PORT_DS3231 i2c1
+// #define I2C_SDA_PIN_DS3231 2
+// #define I2C_SCL_PIN_DS3231 3
 #define I2C_BAUDRATE_DS3231 100000
 
 // Registradores do DS3231
@@ -138,14 +141,10 @@ bool ds3231_is_connected() {
 // Ler registrador do DS3231
 uint8_t ds3231_read_register(uint8_t reg) {
     uint8_t data;
+    // w_err e r_err para futuro debug;
     int w_err = i2c_write_blocking(I2C_PORT_DS3231, DS3231_I2C_ADDRESS, &reg, 1, true);
-    // if (w_err != 0) {
-    //     printf("\nErro em escrita i2c no ds3231: %d\n", w_err);
-    // }
     int r_err = i2c_read_blocking(I2C_PORT_DS3231, DS3231_I2C_ADDRESS, &data, 1, false);
-    // if (r_err != 0) {
-    //     printf("\nErro em leitura i2c no ds3231: %d\n", r_err);
-    // }
+
     return data;
 }
 
@@ -199,34 +198,16 @@ void ds3231_get_datetime(rtc_datetime_t *datetime) {
 void generate_timestamp(char *buffer, size_t buffer_size) {
     rtc_datetime_t current_time;
     ds3231_get_datetime(&current_time);
-
-    // char s_timestamp[25];
-    // char s_tempo[20];
-
-    // sprintf(s_data, "%d/%d/%d", current_time.date, current_time.month, current_time.year);
-    // snprintf(s_timestamp, sizeof(s_timestamp), "%02d-%02d-%02d %02d:%02d%02d", current_time.date,
-    //           current_time.month, current_time.year, current_time.hours,
-    //           current_time.minutes, current_time.seconds);
-    // snprintf(s_tempo, sizeof(s_tempo), "%02d:%02d:%02d", current_time.hours,
-    //           current_time.minutes, current_time.seconds);
-
-    // TODO: passar essas variaveis para a variavel timestamp no json que sera enviado via mqtt
-    // char *showing_text[] = {
-    //     s_data,
-    //     s_tempo
-    // };
-
-    // show_message_oled(showing_text,2);
     
     // Formato: YYYY-MM-DD HH:MM:SS
     snprintf(buffer, buffer_size, "%02d-%02d-%02d %02d:%02d:%02d",
              current_time.date, current_time.month,  current_time.year,
-             current_time.seconds, current_time.minutes, current_time.hours);
+             current_time.hours, current_time.minutes, current_time.seconds);
 }
 // *** FIM do trecho do codigo para uso do ds3231
 
 // *** COMEÇO do trecho do codigo para uso do cliente ntp
-// Called with results of operation
+// Função com resultado da request e agendando uma nova execução futura
 static void ntp_result(NTP_T* state, int status, time_t *result) {
     if (status == 0 && result) {
         // struct tm *utc = gmtime(result);
@@ -330,12 +311,12 @@ static void resend_worker_fn(__unused async_context_t *context, async_at_time_wo
 static NTP_T* ntp_init(void) {
     NTP_T *state = (NTP_T*)calloc(1, sizeof(NTP_T));
     if (!state) {
-        printf("failed to allocate state\n");
+        printf("Falhou em alocar estado NTP\n");
         return NULL;
     }
     state->ntp_pcb = udp_new_ip_type(IPADDR_TYPE_ANY);
     if (!state->ntp_pcb) {
-        printf("failed to create pcb\n");
+        printf("Falhou em criar PCB para NTP \n");
         free(state);
         return NULL;
     }
@@ -350,10 +331,12 @@ static NTP_T* ntp_init(void) {
 // Runs ntp test forever
 void init_ntp_client(void) {
     NTP_T *state = ntp_init();
-    if (!state)
+    if (!state){
+        printf("\nFalhou em inicializar cliente NTP!\n");
         return;
+    }
+    printf("\nCriou cliente NTP!\n");        
     hard_assert(async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(),  &state->request_worker, 0)); // make the first request
-
     // free(state);
 }
 
@@ -365,35 +348,35 @@ void init_ntp_client(void) {
 #define DEC_SEP ','
 
 // ----------------- OLED helpers -----------------
-static void oled_setup(void) {
-    i2c_init(OLED_I2C_INST, ssd1306_i2c_clock * 1000);
-    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(I2C_SDA_PIN);
-    gpio_pull_up(I2C_SCL_PIN);
-    ssd1306_init();
-}
+// static void oled_setup(void) {
+//     i2c_init(OLED_I2C_INST, ssd1306_i2c_clock * 1000);
+//     gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
+//     gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
+//     gpio_pull_up(I2C_SDA_PIN);
+//     gpio_pull_up(I2C_SCL_PIN);
+//     ssd1306_init();
+// }
 
-static void show_message_oled(char* message[], int lines) {
-    struct render_area frame_area = {
-        .start_column = 0,
-        .end_column   = ssd1306_width - 1,
-        .start_page   = 0,
-        .end_page     = ssd1306_n_pages - 1
-    };
-    calculate_render_area_buffer_length(&frame_area);
+// static void show_message_oled(char* message[], int lines) {
+//     struct render_area frame_area = {
+//         .start_column = 0,
+//         .end_column   = ssd1306_width - 1,
+//         .start_page   = 0,
+//         .end_page     = ssd1306_n_pages - 1
+//     };
+//     calculate_render_area_buffer_length(&frame_area);
 
-    uint8_t ssd[ssd1306_buffer_length];
-    memset(ssd, 0, ssd1306_buffer_length);
-    render_on_display(ssd, &frame_area);
+//     uint8_t ssd[ssd1306_buffer_length];
+//     memset(ssd, 0, ssd1306_buffer_length);
+//     render_on_display(ssd, &frame_area);
 
-    int y = 0;
-    for (uint i = 0; i < (uint)lines; i++) {
-        ssd1306_draw_string(ssd, 5, y, message[i]);
-        y += 8;
-    }
-    render_on_display(ssd, &frame_area);
-}
+//     int y = 0;
+//     for (uint i = 0; i < (uint)lines; i++) {
+//         ssd1306_draw_string(ssd, 5, y, message[i]);
+//         y += 8;
+//     }
+//     render_on_display(ssd, &frame_area);
+// }
 
 // ----------------- Fila circular de amostras -----------------
 typedef struct {
@@ -470,34 +453,46 @@ static void on_puback(void) {
     }
 }
 
+// // função que eu tava utilizando para verificar os dispositivos i2c conectados, não é mais necessária
+// void scan_i2c_devices() {
+//     printf("Dispositivos no barramento I2C1:\n");
+    
+//     for (int addr = 0x08; addr < 0x78; addr++) {
+//         uint8_t data;
+//         int ret = i2c_read_blocking(i2c1, addr, &data, 1, false);
+        
+//         if (ret >= 0) {
+//             printf("Encontrado: 0x%02X", addr);
+            
+//             // Identificar dispositivo
+//             if (addr == 0x68) printf(" (DS3231 RTC)");
+//             else if (addr == 0x3C || addr == 0x3D) printf(" (OLED SSD1306/SH1106)");
+//             else if (addr == 0x57) printf(" (EEPROM AT24C32)");            
+//             printf("\n");
+//         }
+//     }
+// }
+
 int main(void) {
     stdio_init_all();
-    sleep_ms(1000);
+    
+    sleep_ms(10000);
+    printf("\nstart\n");
 
     // LED GREEN
     setup_ledg();
     // SPI
     setup_spi();
+    printf("\nled e spi ok\n");
     // FATFS
     bool sd_mount = microsd_mount();
     bool sd_open = microsd_open();
 
     // OLED
-    oled_setup();
-
-    // cliente ntp
-    ntp_init();
-
-    // inicializacao ds3231
-    init_i2c_ds3231();
-     // Aguardar um pouco para estabilizar
-    sleep_ms(1000);
-    
-    // Inicializar DS3231
-    if (!ds3231_init()) {
-        printf("Falha ao inicializar DS3231. Verifique as conexões.\n");
-        return -1;
-    }
+    // oled_setup();
+    // char *showing_text[] = { "starting", "oled" };
+    // show_message_oled(showing_text, 2);
+    // printf("\noled ok\n");
 
     // AHT10 em I2C0 (GPIO0/1)
     if (!aht10_init(AHT_I2C_INST, AHT_I2C_SDA, AHT_I2C_SCL)) {
@@ -513,6 +508,20 @@ int main(void) {
     } else {
         printf("[WiFi] ERRO ao conectar em '%s'\n", WIFI_SSID);
     }
+
+
+    // cliente ntp
+    init_ntp_client();
+    printf("\nntp ok\n");
+    // inicializacao ds3231
+    init_i2c_ds3231();
+    sleep_ms(1000);    
+    // Inicializar DS3231
+    if (!ds3231_init()) {
+        printf("Falha ao inicializar DS3231. Verifique as conexões.\n");
+        // return -1;
+    }
+    printf("\nds3231 ok\n");
 
     // MQTT
     mqtt_set_puback_callback(on_puback);
@@ -552,8 +561,9 @@ int main(void) {
 
             float tc = 0.0f, rh = 0.0f;
             if (aht10_read(AHT_I2C_INST, &tc, &rh)) {
-                char timestamp[31];
+                char timestamp[31] = "999999999";
                 generate_timestamp(timestamp, sizeof(timestamp));
+                // printf("\ntempo gerado em timestamp: %s", timestamp);
                 Sample s;
                 // = { .ts_ms = timestamp, .temp_c = tc, .rh_pct = rh }
                 strcpy(s.ts_ms, timestamp);
@@ -578,8 +588,8 @@ int main(void) {
             snprintf(s_q,     sizeof(s_q),     "Q: %u", (unsigned)q_count);
             snprintf(s_state, sizeof(s_state), "MQTT: %s", mqtt_is_connected() ? "OK" : "OFF");
 
-            char *showing_text[] = { s_t, s_rh, s_q, s_state };
-            show_message_oled(showing_text, 4);
+            // char *showing_text[] = { s_t, s_rh, s_q, s_state };
+            // show_message_oled(showing_text, 4);
         }
 
         // -------- Reconexão Wi-Fi (backoff) --------

@@ -97,7 +97,7 @@ target_link_libraries(pot_mqtt
     pico_stdlib
     hardware_i2c
     hardware_adc
-    hardware_clocks
+    # hardware_clocks
     pico_cyw43_arch_lwip_threadsafe_background
     pico_fatfs # BIBLIOTECA PARA ARMAZENAMENTO COM MICRO SD
 )
