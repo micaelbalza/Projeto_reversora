@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -14,10 +15,44 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 
+#include "esp_wifi.h"
+#include "esp_event.h"
+// #include "time_sync.h"
+#include "DS1302Manager.h"
+#include "esp_sntp.h"
+#include <sys/time.h>
+
+
 #include "joystick_hall.h"
 #include "rpm_pulse_counter.h"
 
+
 static const char *TAG = "MAIN";
+
+static bool wifi_connected = false;
+
+static bool ntp_synced = false;
+
+
+// config wifi
+#define WIFI_SSID      "VIVOFIBRA-71C8"
+#define WIFI_PASSWORD  "1EEA618025"
+
+// config ntp
+#define NTP_SERVER1 "a.ntp.br"
+#define NTP_SERVER2 "pool.ntp.org"
+#define NTP_SERVER3 "time.google.com"
+
+#define TIMEZONE "BRT3BRST,M10.3.0/0,M2.3.0/0"
+
+#define SYNC_INTERVAL_SEC (60 * 60)
+
+// DS1302 GPIOs
+#define DS1302_CLK_GPIO  14
+#define DS1302_DAT_GPIO  12
+#define DS1302_RST_GPIO  13
+
+
 
 // ----------------- Encoder / RPM measurement -----------------
 #define RPM_MEASUREMENT_WINDOW_SECONDS   1.0f     // blocking window
@@ -40,6 +75,154 @@ static const float kCalibrationTargetRpm[CALIB_POINT_COUNT] = {
 
 // Pulses/s measured at each calibration point
 static float sCalibrationMeasuredPulsesPerSecond[CALIB_POINT_COUNT] = {0.0f};
+
+// -------------------------------------------------------------
+// Wifi config e status // TODO: isso vai mudar com a logica de Access Point
+// -------------------------------------------------------------
+
+bool wifi_is_connected(void) {
+    return wifi_connected;
+}
+
+static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data) {
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT &&
+               event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        wifi_connected = false;
+        esp_wifi_connect();
+    } else if (event_base == IP_EVENT &&
+               event_id == IP_EVENT_STA_GOT_IP) {
+        wifi_connected = true;
+    }
+}
+
+void wifi_init_sta(void) {
+    nvs_flash_init();
+    esp_netif_init();
+    esp_event_loop_create_default();
+    esp_netif_create_default_wifi_sta();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg);
+
+    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
+                               &wifi_event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                               &wifi_event_handler, NULL);
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASSWORD,
+        },
+    };
+
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    esp_wifi_start();
+}
+
+
+static const char *TAG_TIME = "TIME";
+
+static void time_sync_cb(struct timeval *tv) {
+    ESP_LOGI(TAG_TIME, "NTP sincronizado");
+
+    struct tm timeinfo;
+    localtime_r(&tv->tv_sec, &timeinfo);
+
+    RTCDateTime dt = {
+        .year = timeinfo.tm_year + 1900,
+        .month = timeinfo.tm_mon + 1,
+        .day = timeinfo.tm_mday,
+        .hour = timeinfo.tm_hour,
+        .minute = timeinfo.tm_min,
+        .second = timeinfo.tm_sec,
+        .dayOfWeek = timeinfo.tm_wday
+    };
+
+    if (ds1302_set_datetime(&dt)) {
+        ESP_LOGI(TAG_TIME, "✓ DS1302 atualizado com horário NTP");
+        ntp_synced = true;
+    } else {
+        ESP_LOGI(TAG_TIME, "✗ Falha ao atualizar DS1302!");
+    }
+
+}
+
+void ntp_init(void) {
+    setenv("TZ", TIMEZONE, 1);
+    tzset();
+
+    sntp_set_time_sync_notification_cb(time_sync_cb);
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setservername(0, NTP_SERVER1);
+    esp_sntp_setservername(1, NTP_SERVER2);
+    esp_sntp_setservername(2, NTP_SERVER3);
+    esp_sntp_init();
+}
+
+void sync_system_from_rtc(void) {
+
+    ESP_LOGI(TAG_TIME, "Tentando sincronizar sistema a partir do DS1302...");
+    
+    // Verifica se o DS1302 tem horário válido
+    if (!ds1302_is_valid()) {
+        ESP_LOGW(TAG_TIME, "DS1302 não tem horário válido! Usando horário padrão.");
+        return;
+    }
+
+    RTCDateTime dt = ds1302_get_datetime();
+
+    struct tm tm = {
+        .tm_year = dt.year - 1900,
+        .tm_mon  = dt.month - 1,
+        .tm_mday = dt.day,
+        .tm_hour = dt.hour,
+        .tm_min  = dt.minute,
+        .tm_sec  = dt.second,
+        .tm_isdst = -1
+    };
+
+    time_t t = mktime(&tm);
+    struct timeval tv = { .tv_sec = t };
+    settimeofday(&tv, NULL);
+
+    ESP_LOGI(TAG_TIME, "Sistema atualizado a partir do RTC");
+}
+
+void time_task(void *arg) {
+    while (1) {
+        time_t now;
+        struct tm timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+
+        // Monta string de status
+        char status[64];
+        if (ntp_synced && wifi_connected) {
+            snprintf(status, sizeof(status), "NTP+RTC | WiFi: ✓");
+        } else if (wifi_connected) {
+            snprintf(status, sizeof(status), "RTC | WiFi: ✓ (aguardando NTP)");
+        } else {
+            snprintf(status, sizeof(status), "RTC | WiFi: ✗");
+        }
+
+        printf("[%02d/%02d/%04d %02d:%02d:%02d]\n",
+               timeinfo.tm_mday,
+               timeinfo.tm_mon + 1,
+               timeinfo.tm_year + 1900,
+               timeinfo.tm_hour,
+               timeinfo.tm_min,
+               timeinfo.tm_sec);
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+
 
 // -------------------------------------------------------------
 // Button setup and edge detection
@@ -260,133 +443,176 @@ static const char* state_str(jh_state_t s)
 // -------------------- MAIN --------------------
 void app_main(void)
 {
-    // ⏳ Aguarda 10s para abrir o Serial Monitor
-    vTaskDelay(pdMS_TO_TICKS(10000));
+    
+    ESP_LOGI(TAG, "\n[1/3] Inicializando DS1302...");
+    if (!ds1302_begin(DS1302_RST_GPIO, DS1302_CLK_GPIO, DS1302_DAT_GPIO)) {
+        ESP_LOGI(TAG, "FALHA CRÍTICA: DS1302 não inicializado!");
+        ESP_LOGI(TAG, "Verifique as conexões:");
+        ESP_LOGI(TAG, "  RST: GPIO %d", DS1302_RST_GPIO);
+        ESP_LOGI(TAG, "  CLK: GPIO %d", DS1302_CLK_GPIO);
+        ESP_LOGI(TAG, "  DAT: GPIO %d", DS1302_DAT_GPIO);
+        return;
+    }
 
-    RpmCounterConfig rpm_config = {
-        .encoder_gpio         = GPIO_NUM_32,
-        .num_calib_points     = CALIB_POINT_COUNT,
-        .calib_target_rpm     = {1000.0f, 1200.0f, 1500.0f},
-        .calib_window_seconds = 3.0f
-    };
-    // TODO: comentei essa linha porque estava redundante
-    // ESP_LOGI(TAG, "Inicializando sistema...");
+    if (ds1302_is_halted()) {
+        ESP_LOGW(TAG, "DS1302 estava parado! Iniciando...");
+        ds1302_set_halt(false);
+    }
 
-    ESP_ERROR_CHECK(rpm_counter_init(&rpm_config));
+    RTCDateTime rtc_time = ds1302_get_datetime();
+    ESP_LOGI(TAG, "Horário atual no DS1302: %02d/%02d/%04d %02d:%02d:%02d",
+             rtc_time.day, rtc_time.month, rtc_time.year,
+             rtc_time.hour, rtc_time.minute, rtc_time.second);
 
-    configure_calibration_button();
+    // 2. Inicializa WiFi
+    ESP_LOGI(TAG, "\n[2/3] Inicializando WiFi...");
+    wifi_init_sta();
 
-    ESP_LOGI(TAG, "System started. Encoder on GPIO32, button on GPIO13 (D13).");
+    ESP_LOGI(TAG, "Aguardando conexão WiFi (timeout: 15s)...");
+    int wifi_retry = 0;
+    while (!wifi_is_connected() && wifi_retry < 30) {
+        vTaskDelay(pdMS_TO_TICKS(500));
+        wifi_retry++;
+    }
 
-    // If no PPR was loaded from NVS, force calibration flow.
-    float ppr = rpm_counter_get_estimated_ppr();
-    if (ppr <= 0.0f) {
-        ESP_LOGW(TAG, "No valid PPR loaded from NVS. Calibration is required.");
+    vTaskDelay(pdMS_TO_TICKS(3000));
 
-        // Temporary non-persistent guess so measure_debug can show pulses/s while calibrating
-        // (any positive value is fine just to allow debug function to run)
-        ESP_ERROR_CHECK(rpm_counter_set_estimated_ppr(1000.0f, false));
-
-        ESP_ERROR_CHECK(run_interactive_calibration());
-        ppr = rpm_counter_get_estimated_ppr();
-        ESP_LOGI(TAG, "Calibration stored in NVS. Current PPR=%.3f", ppr);
+    if (wifi_is_connected()) {
+        ESP_LOGI(TAG, "WiFi conectado! Iniciando NTP...");
+        ntp_init();
     } else {
-        ESP_LOGI(TAG, "Loaded PPR from NVS: %.3f. Skipping calibration.", ppr);
+        sync_system_from_rtc();
     }
 
-    ESP_LOGI(TAG, "Entering normal monitoring (prints every 10 seconds).");
+    xTaskCreate(time_task, "time_task", 4096, NULL, 5, NULL);
 
-    // calibração do sensor hall
-    button_init();
+    // // ⏳ Aguarda 10s para abrir o Serial Monitor
+    // vTaskDelay(pdMS_TO_TICKS(10000));
 
-    // Detecta botão pressionado no BOOT
-    bool force_recalib = false;
-    if (gpio_get_level(BTN_GPIO) == BTN_ACTIVE_LEVEL) {
-        ESP_LOGW(TAG, "Botao pressionado no boot -> FORCANDO recalibracao");
-        force_recalib = true;
-    }
+    // RpmCounterConfig rpm_config = {
+    //     .encoder_gpio         = GPIO_NUM_32,
+    //     .num_calib_points     = CALIB_POINT_COUNT,
+    //     .calib_target_rpm     = {1000.0f, 1200.0f, 1500.0f},
+    //     .calib_window_seconds = 3.0f
+    // };
+    // // TODO: comentei essa linha porque estava redundante
+    // // ESP_LOGI(TAG, "Inicializando sistema...");
 
-    joystick_hall_config_t cfg = {
-        .sensor_a_ch = ADC1_CHANNEL_5, // GPIO33
-        .sensor_b_ch = ADC1_CHANNEL_6, // GPIO34
-        .width = ADC_WIDTH_BIT_12,
-        .atten = ADC_ATTEN_DB_12,
-        .samples_per_read = 32,
-        .deadband_percent = 5,
-    };
+    // ESP_ERROR_CHECK(rpm_counter_init(&rpm_config));
 
-    ESP_ERROR_CHECK(joystick_hall_init(&cfg));
+    // configure_calibration_button();
 
-    // Força limpeza da calibração se solicitado
-    if (force_recalib) {
-        ESP_ERROR_CHECK(joystick_hall_clear_calibration());
-    }
+    // ESP_LOGI(TAG, "System started. Encoder on GPIO32, button on GPIO13 (D13).");
 
-    // ---------------- CALIBRAÇÃO ----------------
-    if (!joystick_hall_is_calibrated()) {
+    // // If no PPR was loaded from NVS, force calibration flow.
+    // float ppr = rpm_counter_get_estimated_ppr();
+    // if (ppr <= 0.0f) {
+    //     ESP_LOGW(TAG, "No valid PPR loaded from NVS. Calibration is required.");
 
-        ESP_LOGI(TAG, "===== CALIBRACAO DO MANCHE =====");
+    //     // Temporary non-persistent guess so measure_debug can show pulses/s while calibrating
+    //     // (any positive value is fine just to allow debug function to run)
+    //     ESP_ERROR_CHECK(rpm_counter_set_estimated_ppr(1000.0f, false));
 
-        ESP_LOGI(TAG, "Coloque o manche no MEIO e aperte o botao.");
-        button_wait_press();
-        ESP_ERROR_CHECK(joystick_hall_capture_point(JH_POS_MID));
+    //     ESP_ERROR_CHECK(run_interactive_calibration());
+    //     ppr = rpm_counter_get_estimated_ppr();
+    //     ESP_LOGI(TAG, "Calibration stored in NVS. Current PPR=%.3f", ppr);
+    // } else {
+    //     ESP_LOGI(TAG, "Loaded PPR from NVS: %.3f. Skipping calibration.", ppr);
+    // }
 
-        ESP_LOGI(TAG, "Coloque o manche para FRENTE e aperte o botao.");
-        button_wait_press();
-        ESP_ERROR_CHECK(joystick_hall_capture_point(JH_POS_FRONT));
+    // ESP_LOGI(TAG, "Entering normal monitoring (prints every 10 seconds).");
 
-        ESP_LOGI(TAG, "Coloque o manche para TRAS e aperte o botao.");
-        button_wait_press();
-        ESP_ERROR_CHECK(joystick_hall_capture_point(JH_POS_BACK));
+    // // calibração do sensor hall
+    // button_init();
 
-        ESP_ERROR_CHECK(joystick_hall_save_calibration());
-        ESP_LOGI(TAG, "Calibracao concluida e salva no NVS!");
-    } else {
-        ESP_LOGI(TAG, "Calibracao carregada do NVS.");
-    }
+    // // Detecta botão pressionado no BOOT
+    // bool force_recalib = false;
+    // if (gpio_get_level(BTN_GPIO) == BTN_ACTIVE_LEVEL) {
+    //     ESP_LOGW(TAG, "Botao pressionado no boot -> FORCANDO recalibracao");
+    //     force_recalib = true;
+    // }
 
-    ESP_LOGI(TAG, "===== INICIANDO LEITURA DO MANCHE =====");
+    // joystick_hall_config_t cfg = {
+    //     .sensor_a_ch = ADC1_CHANNEL_5, // GPIO33
+    //     .sensor_b_ch = ADC1_CHANNEL_6, // GPIO34
+    //     .width = ADC_WIDTH_BIT_12,
+    //     .atten = ADC_ATTEN_DB_12,
+    //     .samples_per_read = 32,
+    //     .deadband_percent = 5,
+    // };
 
-    // ---------------- LEITURA ----------------
-    while (1) {
-        // dados de reversora
-        joystick_hall_reading_t r;
-        ESP_ERROR_CHECK(joystick_hall_read(&r));
+    // ESP_ERROR_CHECK(joystick_hall_init(&cfg));
 
-        // dados de rpm
-        uint32_t pulses = 0;
-        float pulses_per_s = 0.0f;
-        float rpm = 0.0f;
-        esp_err_t err = rpm_counter_measure_debug(
-            RPM_MEASUREMENT_WINDOW_SECONDS,
-            &pulses,
-            &pulses_per_s,
-            &rpm
-        );
+    // // Força limpeza da calibração se solicitado
+    // if (force_recalib) {
+    //     ESP_ERROR_CHECK(joystick_hall_clear_calibration());
+    // }
 
-        if (err == ESP_OK) {
-            printf("RPM DATA: ");
-            printf("pulses=%lu | pulses/s=%.2f | RPM=%.2f\n",
-                   (unsigned long)pulses, pulses_per_s, rpm);
-        }
+    // // ---------------- CALIBRAÇÃO ----------------
+    // if (!joystick_hall_is_calibrated()) {
 
-        if (is_calibration_button_long_pressed()) {
-            ESP_LOGI(TAG, "Long press detected. Recalibrating...");
-            ESP_ERROR_CHECK(rpm_counter_recalibrate());
-        }
+    //     ESP_LOGI(TAG, "===== CALIBRACAO DO MANCHE =====");
+
+    //     ESP_LOGI(TAG, "Coloque o manche no MEIO e aperte o botao.");
+    //     button_wait_press();
+    //     ESP_ERROR_CHECK(joystick_hall_capture_point(JH_POS_MID));
+
+    //     ESP_LOGI(TAG, "Coloque o manche para FRENTE e aperte o botao.");
+    //     button_wait_press();
+    //     ESP_ERROR_CHECK(joystick_hall_capture_point(JH_POS_FRONT));
+
+    //     ESP_LOGI(TAG, "Coloque o manche para TRAS e aperte o botao.");
+    //     button_wait_press();
+    //     ESP_ERROR_CHECK(joystick_hall_capture_point(JH_POS_BACK));
+
+    //     ESP_ERROR_CHECK(joystick_hall_save_calibration());
+    //     ESP_LOGI(TAG, "Calibracao concluida e salva no NVS!");
+    // } else {
+    //     ESP_LOGI(TAG, "Calibracao carregada do NVS.");
+    // }
+
+    // ESP_LOGI(TAG, "===== INICIANDO LEITURA DO MANCHE =====");
+
+    // // ---------------- LEITURA ----------------
+    // while (1) {
+    //     // dados de reversora
+    //     joystick_hall_reading_t r;
+    //     ESP_ERROR_CHECK(joystick_hall_read(&r));
+
+    //     // dados de rpm
+    //     uint32_t pulses = 0;
+    //     float pulses_per_s = 0.0f;
+    //     float rpm = 0.0f;
+    //     esp_err_t err = rpm_counter_measure_debug(
+    //         RPM_MEASUREMENT_WINDOW_SECONDS,
+    //         &pulses,
+    //         &pulses_per_s,
+    //         &rpm
+    //     );
+
+    //     if (err == ESP_OK) {
+    //         printf("RPM DATA: ");
+    //         printf("pulses=%lu | pulses/s=%.2f | RPM=%.2f\n",
+    //                (unsigned long)pulses, pulses_per_s, rpm);
+    //     }
+
+    //     if (is_calibration_button_long_pressed()) {
+    //         ESP_LOGI(TAG, "Long press detected. Recalibrating...");
+    //         ESP_ERROR_CHECK(rpm_counter_recalibrate());
+    //     }
 
 
-        printf("REVERSORA DATA: ");
-        printf(
-            "A=%4d  B=%4d  D=%5d | %-5s | frente=%3d%%  tras=%3d%%\n",
-            r.a_raw,
-            r.b_raw,
-            r.d_raw,
-            state_str(r.state),
-            r.front_percent,
-            r.back_percent
-        );
+    //     printf("REVERSORA DATA: ");
+    //     printf(
+    //         "A=%4d  B=%4d  D=%5d | %-5s | frente=%3d%%  tras=%3d%%\n",
+    //         r.a_raw,
+    //         r.b_raw,
+    //         r.d_raw,
+    //         state_str(r.state),
+    //         r.front_percent,
+    //         r.back_percent
+    //     );
 
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
+    //     vTaskDelay(pdMS_TO_TICKS(100));
+    // }
 }
