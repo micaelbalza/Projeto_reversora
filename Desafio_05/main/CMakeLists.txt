@@ -1,0 +1,19 @@
+idf_component_register(
+    SRCS
+        "hello_world_main.c"
+        "Include/mqtt_send_module.c"
+        "Include/joystick_hall.c"
+        "Include/rpm_pulse_counter.c"
+    INCLUDE_DIRS
+        "Include"
+    REQUIRES
+        nvs_flash
+        esp_timer
+        esp_event
+        esp_netif
+        esp_wifi
+        mqtt
+        driver
+    PRIV_REQUIRES
+        spi_flash
+)
