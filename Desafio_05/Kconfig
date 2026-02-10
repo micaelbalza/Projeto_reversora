@@ -1,0 +1,84 @@
+menuconfig_title "Configuração do Sistema de Calibração"
+
+menu "Calibração ESP32"
+
+    config WIFI_AP_SSID
+        string "SSID do Modo AP"
+        default "ESP32-CALIB"
+        help
+            Nome da rede Wi-Fi quando ESP32 está em modo Access Point.
+
+    config WIFI_AP_PASSWORD
+        string "Senha do Modo AP"
+        default "12345678"
+        help
+            Senha da rede Wi-Fi em modo AP.
+            Mínimo 8 caracteres.
+
+    config WIFI_MAXIMUM_RETRY
+        int "Tentativas máximas de conexão Wi-Fi"
+        default 5
+        range 1 10
+        help
+            Número de tentativas de conexão antes de voltar ao modo AP.
+
+    config HTTP_SERVER_PORT
+        int "Porta do servidor HTTP"
+        default 80
+        range 1 65535
+        help
+            Porta para o servidor web (padrão 80).
+
+    config CALIBRATION_TIMEOUT_SECONDS
+        int "Timeout de segurança da calibração (segundos)"
+        default 300
+        range 10 3600
+        help
+            Tempo máximo para conclusão de um passo de calibração.
+
+    config ENABLE_DEBUG_LOG
+        bool "Ativar logs de debug"
+        default y
+        help
+            Ativa logs detalhados de WiFi e calibração.
+
+    config STACK_SIZE_WIFI
+        int "Tamanho da stack WiFi (bytes)"
+        default 4096
+        range 2048 8192
+        help
+            Tamanho da stack para tasks de Wi-Fi.
+
+    config STACK_SIZE_WEB
+        int "Tamanho da stack servidor web (bytes)"
+        default 8192
+        range 4096 16384
+        help
+            Tamanho da stack para servidor HTTP.
+
+endmenu
+
+menu "Configuração de Hardware (Opcional)"
+
+    config GPIO_MOTOR_NEUTRAL
+        int "GPIO motor neutro"
+        default 4
+        range 0 39
+        help
+            Pino GPIO para acionamento de posição neutra.
+
+    config GPIO_MOTOR_FORWARD
+        int "GPIO motor avante"
+        default 5
+        range 0 39
+        help
+            Pino GPIO para acionamento de posição avante.
+
+    config GPIO_MOTOR_REVERSE
+        int "GPIO motor ré"
+        default 18
+        range 0 39
+        help
+            Pino GPIO para acionamento de posição ré.
+
+endmenu
