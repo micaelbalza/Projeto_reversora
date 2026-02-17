@@ -1,9 +1,10 @@
 idf_component_register(
     SRCS
-        "hello_world_main.c"
+        "main.c"
         "Include/mqtt_send_module.c"
         "Include/joystick_hall.c"
         "Include/rpm_pulse_counter.c"
+        "Include/micro_sd.c"
     INCLUDE_DIRS
         "Include"
     REQUIRES
@@ -14,6 +15,10 @@ idf_component_register(
         esp_wifi
         mqtt
         driver
+        fatfs 
+        sdmmc 
+        vfs 
+        esp_driver_spi
     PRIV_REQUIRES
         spi_flash
 )

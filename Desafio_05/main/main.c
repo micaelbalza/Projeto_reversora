@@ -35,6 +35,7 @@
 #include "mqtt_send_module.h"
 #include "joystick_hall.h"
 #include "rpm_pulse_counter.h"
+#include "micro_sd.h"
 
 // ============================================================
 // 1) CONFIGURAÇÕES GERAIS DO PROJETO
@@ -80,6 +81,8 @@ static EventGroupHandle_t s_wifi_ev = NULL;
 #define BTN_JOY_GPIO        GPIO_NUM_13
 #define BTN_RPM_GPIO        GPIO_NUM_12
 #define BTN_ACTIVE_LEVEL    0   // pull-up: pressionado = 0
+
+FILE *f;
 
 static void button_init_gpio(gpio_num_t gpio)
 {
@@ -490,7 +493,7 @@ static void telemetry_real_task(void *arg)
 
     while (1) {
         mqtt_send_sample_t s = {0};
-
+        
         s.ts_ms = esp_timer_get_time() / 1000;
 
         joystick_hall_reading_t jr;
@@ -503,6 +506,20 @@ static void telemetry_real_task(void *arg)
         float rpm = 0.0f;
         esp_err_t rerr = rpm_counter_measure_rpm_blocking(rpm_window_s, &rpm);
         s.rpm = (rerr == ESP_OK) ? rpm : 0.0f;
+
+        // monta o JSON e escreve no SD
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+            "{\"ts\":%lld,\"front\":%u,\"back\":%u,\"state\":%d,\"rpm\":%.2f}\n",
+            (long long)s.ts_ms,
+            s.front_percent,
+            s.back_percent,
+            s.state,
+            s.rpm
+        );
+        if (!write_sd_card(&f, buf)) {
+            ESP_LOGW(TAG, "Falha ao escrever no SD");
+        }
 
         bool ok = mqtt_send_module_push_sample(g_mqtt_send, &s);
 
@@ -525,6 +542,53 @@ static void telemetry_real_task(void *arg)
 // ============================================================
 void app_main(void)
 {
+    esp_err_t ret;
+
+    // configuração de montagem
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+        .format_if_mount_failed = false, // Evita formatar o cartão por erro de fiação
+        .max_files = 5,
+        .allocation_unit_size = 0
+    };
+
+    // configuração de barramento SPI
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+        
+    // velocidade reduzida para 200kHz (padrão de inicialização segura)
+    host.max_freq_khz = 200; 
+
+    spi_bus_config_t bus_cfg = {
+        .mosi_io_num = PIN_NUM_MOSI,
+        .miso_io_num = PIN_NUM_MISO,
+        .sclk_io_num = PIN_NUM_CLK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 4000,
+    };
+
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.gpio_cs = (gpio_num_t) PIN_NUM_CS;
+    slot_config.host_id = host.slot;
+
+    sdmmc_card_t *card;
+
+    ret = setup_sd_card(host, bus_cfg);
+
+    if (ret != ESP_OK) {
+        while (true) {
+            printf("Erro ao inicilizar o SPI!\n");
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
+        }
+    }
+    
+    while (!mount_sd_card(ret, host, slot_config, mount_config, &card)) {
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+
+    while (!open_sd_card(&f)) {
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
