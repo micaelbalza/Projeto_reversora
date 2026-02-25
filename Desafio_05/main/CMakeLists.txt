@@ -5,6 +5,7 @@ idf_component_register(
         "Include/joystick_hall.c"
         "Include/rpm_pulse_counter.c"
         "Include/micro_sd.c"
+        "Include/ds3231.c"
     INCLUDE_DIRS
         "Include"
     REQUIRES
@@ -19,6 +20,7 @@ idf_component_register(
         sdmmc 
         vfs 
         esp_driver_spi
+        lwip
     PRIV_REQUIRES
         spi_flash
 )

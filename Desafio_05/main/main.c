@@ -14,11 +14,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 
+#include "esp_system.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_event.h"
@@ -36,6 +38,7 @@
 #include "joystick_hall.h"
 #include "rpm_pulse_counter.h"
 #include "micro_sd.h"
+#include "ds3231.h"
 
 // ============================================================
 // 1) CONFIGURAÇÕES GERAIS DO PROJETO
@@ -82,7 +85,11 @@ static EventGroupHandle_t s_wifi_ev = NULL;
 #define BTN_RPM_GPIO        GPIO_NUM_12
 #define BTN_ACTIVE_LEVEL    0   // pull-up: pressionado = 0
 
+// ponteiro para escrita no cartao SD
 FILE *f;
+
+// variavel onde o timestamp sera guardado
+struct tm ds_time = {0};
 
 static void button_init_gpio(gpio_num_t gpio)
 {
@@ -490,6 +497,7 @@ static void telemetry_real_task(void *arg)
     ESP_LOGI(TAG, "Telemetry REAL task started (period=%d ms)", TELEMETRY_PERIOD_MS);
 
     const float rpm_window_s = 0.10f;
+    
 
     while (1) {
         mqtt_send_sample_t s = {0};
@@ -507,15 +515,35 @@ static void telemetry_real_task(void *arg)
         esp_err_t rerr = rpm_counter_measure_rpm_blocking(rpm_window_s, &rpm);
         s.rpm = (rerr == ESP_OK) ? rpm : 0.0f;
 
+        char time_str[64];  // tamanho suficiente para "YYYY-MM-DD HH:MM:SS"
+
+        if (ds3231_get_time(&ds_time) == ESP_OK) {
+            snprintf(
+                time_str,
+                sizeof(time_str),
+                "%04d-%02d-%02d %02d:%02d:%02d",
+                ds_time.tm_year + 1900,
+                ds_time.tm_mon  + 1,
+                ds_time.tm_mday,
+                ds_time.tm_hour,
+                ds_time.tm_min,
+                ds_time.tm_sec
+            );
+
+        } else {
+            ESP_LOGE(TAG, "Falha ao ler DS3231! Verifique conexão I2C");
+        }
+
         // monta o JSON e escreve no SD
         char buf[256];
         snprintf(buf, sizeof(buf),
-            "{\"ts\":%lld,\"front\":%u,\"back\":%u,\"state\":%d,\"rpm\":%.2f}\n",
+            "{\"ts\":%lld,\"front\":%u,\"back\":%u,\"state\":%d,\"rpm\":%.2f,\"timestamp\":%s}\n",
             (long long)s.ts_ms,
             s.front_percent,
             s.back_percent,
             s.state,
-            s.rpm
+            s.rpm,
+            time_str
         );
         if (!write_sd_card(&f, buf)) {
             ESP_LOGW(TAG, "Falha ao escrever no SD");
@@ -598,6 +626,9 @@ void app_main(void)
     ESP_LOGI(TAG, "Starting integrated system (Wi-Fi + MQTT + sensors)...");
 
     wifi_init_and_connect_sta();
+
+    // funcao de sincronizacao com servidor ntp
+    ntp_sync_and_save_to_ds3231();
 
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER_URI,
