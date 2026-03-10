@@ -4,6 +4,7 @@
 #include "esp_event.h"
 #include "nvs_flash.h"
 #include "esp_log.h"
+#include "lwip/ip4_addr.h"
 #include <string.h>
 
 #define WIFI_SSID_STORAGE "wifi_ssid"

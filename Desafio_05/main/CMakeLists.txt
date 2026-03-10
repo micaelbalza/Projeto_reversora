@@ -17,9 +17,9 @@ idf_component_register(
         esp_system
         freertos
         driver
-        nvs
     PRIV_REQUIRES
         spi_flash
+        json
 )
 
 # Incorpora arquivo HTML como asset binário
