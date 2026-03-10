@@ -4,6 +4,8 @@
 #include "freertos/task.h"
 #include <string.h>
 
+#include "joystick_hall.h"
+
 static const char *TAG = "CALIBRATION";
 
 static calibration_state_t current_state = CALIB_IDLE;
@@ -84,31 +86,42 @@ static esp_err_t calibration_validate_transition(calibration_state_t target) {
  */
 static void calibrate_neutral(void) {
     ESP_LOGI(TAG, "Executando calibração neutra...");
-    // Aqui seria chamada a função real da reversora
-    // calibrate_neutral_hw();
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Simula execução
-    ESP_LOGI(TAG, "Calibração neutra concluída");
+    esp_err_t err = joystick_hall_capture_point(JH_POS_MID);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Falha na calibração neutra: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "Calibração neutra concluída");
+    }
 }
 
 static void calibrate_forward(void) {
     ESP_LOGI(TAG, "Executando calibração avante...");
-    // calibrate_forward_hw();
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    ESP_LOGI(TAG, "Calibração avante concluída");
+    esp_err_t err = joystick_hall_capture_point(JH_POS_FRONT);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Falha na calibração avante: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "Calibração avante concluída");
+    }
 }
 
 static void calibrate_reverse(void) {
     ESP_LOGI(TAG, "Executando calibração ré...");
-    // calibrate_reverse_hw();
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    ESP_LOGI(TAG, "Calibração ré concluída");
+    esp_err_t err = joystick_hall_capture_point(JH_POS_BACK);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Falha na calibração ré: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "Calibração ré concluída");
+    }
 }
 
 static void calibrate_finish(void) {
     ESP_LOGI(TAG, "Finalizando calibração...");
-    // calibrate_finish_hw();
-    vTaskDelay(pdMS_TO_TICKS(500));
-    ESP_LOGI(TAG, "Calibração finalizada com sucesso");
+    esp_err_t err = joystick_hall_save_calibration();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Falha ao salvar calibração: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "Calibração finalizada com sucesso");
+    }
 }
 
 /**
