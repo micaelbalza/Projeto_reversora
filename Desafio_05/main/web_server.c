@@ -318,6 +318,7 @@ httpd_handle_t web_server_init(void) {
     config.server_port = 80;
     config.stack_size = 8192;
     config.max_open_sockets = 2;
+    config.max_uri_handlers = 12;
     
     httpd_handle_t server = NULL;
     
