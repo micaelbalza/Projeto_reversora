@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.desafio_05",
+  "data": {
+    "config": {
+      "views": [
+        {
+          "type": "sections",
+          "sections": [
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "heading",
+                  "icon": "mdi:gamepad-round-outline",
+                  "heading": "Manche",
+                  "heading_style": "title"
+                },
+                {
+                  "type": "gauge",
+                  "entity": "sensor.inclinacao_frontal_do_manche",
+                  "min": 0,
+                  "max": 100,
+                  "grid_options": {
+                    "columns": 12,
+                    "rows": "auto"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "entity": "sensor.inclinacao_traseira_do_manche",
+                  "grid_options": {
+                    "columns": 12,
+                    "rows": "auto"
+                  }
+                },
+                {
+                  "type": "entity",
+                  "entity": "sensor.estado_do_manche",
+                  "grid_options": {
+                    "columns": 12,
+                    "rows": 3
+                  }
+                }
+              ],
+              "column_span": 1
+            },
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "heading",
+                  "icon": "mdi:gauge",
+                  "heading": "RPM",
+                  "heading_style": "title"
+                },
+                {
+                  "graph": "line",
+                  "type": "sensor",
+                  "entity": "sensor.rpm_atual_do_motor",
+                  "detail": 1,
+                  "grid_options": {
+                    "columns": 12,
+                    "rows": 3
+                  }
+                }
+              ]
+            },
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "heading",
+                  "icon": "mdi:clock-outline",
+                  "heading": "Timestamp",
+                  "heading_style": "title"
+                },
+                {
+                  "type": "entity",
+                  "entity": "sensor.data_de_recebimento_dos_dados",
+                  "grid_options": {
+                    "columns": 12,
+                    "rows": 3
+                  }
+                }
+              ]
+            }
+          ],
+          "header": {
+            "card": {
+              "type": "markdown",
+              "content": "# Dashboard de Monitoramento de RPM e Reversora\n\n## Dashboard que monitora os valores de RPM do motor, inclinação frontal, traseira e estado da reversora em embarcações pesqueiras da empresa Produmar."
+            }
+          },
+          "badges": []
+        }
+      ]
+    }
+  }
+}
