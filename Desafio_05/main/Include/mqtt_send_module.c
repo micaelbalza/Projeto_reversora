@@ -71,6 +71,14 @@ static bool _publish_and_wait_ack(mqtt_send_module_ctx_t *ctx, const char *paylo
         return false;
     }
 
+    // QoS 0 não possui ACK de publish (PUBACK).
+    // Nesse caso, se o publish retornou msg_id válido, consideramos enviado.
+    if (ctx->cfg.qos == 0) {
+        ctx->awaiting_msg_id = -1;
+        xSemaphoreGive(ctx->pub_mtx);
+        return true;
+    }
+
     ctx->awaiting_msg_id = msg_id;
 
     // Wait ACK signaled by mqtt_send_module_on_published()

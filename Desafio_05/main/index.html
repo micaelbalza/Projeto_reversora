@@ -420,6 +420,29 @@
             <div id="calib-status" class="status info" style="display: none;"></div>
         </div>
 
+        <!-- Tela de Calibração do Motor -->
+        <div id="motor-screen" class="screen">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 18px;">Calibração do Motor</h2>
+
+            <div id="motor-instructions" class="instruction-text">
+                Ajuste o motor para <strong><span id="motor-target-rpm">1000</span> RPM</strong> e clique em capturar.
+            </div>
+
+            <div id="motor-live" class="status info" style="margin-bottom: 12px;">
+                RPM atual: <strong><span id="motor-preview-rpm">-</span></strong>
+            </div>
+
+            <div id="motor-point-info" class="info-text" style="margin-bottom: 14px; text-align: center;">
+                Ponto <span id="motor-current-point">1</span> de <span id="motor-total-points">3</span>
+            </div>
+
+            <button id="motor-capture-btn" class="btn btn-primary">Capturar Ponto</button>
+            <button id="motor-finish-btn" class="btn btn-primary hidden">Concluir Calibração do Motor</button>
+            <button onclick="app.resetMotorCalibration()" class="btn btn-secondary">Reiniciar Motor</button>
+
+            <div id="motor-status" class="status info" style="display: none;"></div>
+        </div>
+
         <!-- Tela de Sucesso -->
         <div id="success-screen" class="screen">
             <div style="text-align: center;">
@@ -438,6 +461,8 @@
             currentScreen: 'wifi',
             wifiState: 'checking',
             calibState: 'idle',
+            motorState: 'idle',
+            isMotorCapturePending: false,
 
             // Inicialização
             init() {
@@ -448,6 +473,7 @@
                 // Atualiza status periodicamente
                 setInterval(() => this.checkWiFiStatus(), 2000);
                 setInterval(() => this.checkCalibrationStatus(), 1000);
+                setInterval(() => this.checkMotorCalibrationStatus(), 1000);
             },
 
             setupEventListeners() {
@@ -463,6 +489,16 @@
                 if (calibBtn) {
                     calibBtn.addEventListener('click', () => this.nextCalibrationStep());
                 }
+
+                const motorCaptureBtn = document.getElementById('motor-capture-btn');
+                if (motorCaptureBtn) {
+                    motorCaptureBtn.addEventListener('click', () => this.captureMotorPoint());
+                }
+
+                const motorFinishBtn = document.getElementById('motor-finish-btn');
+                if (motorFinishBtn) {
+                    motorFinishBtn.addEventListener('click', () => this.finishMotorCalibration());
+                }
             },
 
             // Gerenciamento de telas
@@ -477,17 +513,19 @@
 
             // WiFi
             async checkWiFiStatus() {
+                if (this.currentScreen !== 'wifi') return;
+
                 try {
                     const response = await fetch('/api/wifi/status');
                     const data = await response.json();
 
-                    this.updateWiFiStatus(data.state);
+                    this.updateWiFiStatus(data.state, data.ip || '-');
                 } catch (e) {
                     console.error('Erro ao verificar WiFi:', e);
                 }
             },
 
-            updateWiFiStatus(state) {
+            updateWiFiStatus(state, ip) {
                 const statusEl = document.getElementById('wifi-status');
                 const statusText = document.getElementById('wifi-status-text');
                 const configDiv = document.getElementById('wifi-config');
@@ -504,13 +542,7 @@
                         configDiv.classList.add('hidden');
                         waitingDiv.classList.add('hidden');
                         connectedDiv.classList.remove('hidden');
-                        
-                        // Busca IP
-                        fetch('/api/wifi/status')
-                            .then(r => r.json())
-                            .then(data => {
-                                document.getElementById('wifi-ip').textContent = data.ip;
-                            });
+                        document.getElementById('wifi-ip').textContent = ip;
                         break;
 
                     case 'ap_mode':
@@ -662,7 +694,7 @@
                         nextState = 'wait_finish';
                         break;
                     case 'CONCLUIDA':
-                        this.showScreen('success');
+                        this.goToMotorCalibration();
                         return;
                     default:
                         instructions = 'Carregando...';
@@ -691,6 +723,149 @@
             async resetCalibration() {
                 if (confirm('Deseja reiniciar a calibração?')) {
                     this.goToCalibration();
+                }
+            },
+
+            // Calibração do motor
+            goToMotorCalibration() {
+                this.showScreen('motor');
+                this.startMotorCalibration();
+            },
+
+            async startMotorCalibration() {
+                try {
+                    const response = await fetch('/api/motor-calibration/start', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Calibração do motor iniciada:', data);
+                    this.showMotorStatus(data.message || 'Calibração do motor iniciada', 'info');
+                } catch (e) {
+                    console.error('Erro ao iniciar calibração do motor:', e);
+                    this.showMotorStatus('Erro ao iniciar calibração do motor', 'error');
+                }
+            },
+
+            async captureMotorPoint() {
+                if (this.isMotorCapturePending) return;
+
+                try {
+                    this.isMotorCapturePending = true;
+                    this.showMotorStatus('Iniciando captura do ponto...', 'info');
+
+                    const response = await fetch('/api/motor-calibration/capture', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Captura motor:', data);
+
+                    this.updateMotorCalibrationUI(data);
+                    this.showMotorStatus(data.message || 'Captura iniciada', data.status === 'ok' ? 'info' : 'error');
+                } catch (e) {
+                    console.error('Erro ao capturar ponto do motor:', e);
+                    this.showMotorStatus('Erro ao capturar ponto do motor', 'error');
+                    this.isMotorCapturePending = false;
+                }
+            },
+
+            async finishMotorCalibration() {
+                try {
+                    const response = await fetch('/api/motor-calibration/finish', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Finalização motor:', data);
+
+                    if (data.status === 'ok') {
+                        this.showMotorStatus(`Calibração concluída. PPR final: ${Number(data.final_ppr || 0).toFixed(3)}`, 'success');
+                        this.showScreen('success');
+                    } else {
+                        this.showMotorStatus(data.message || 'Erro ao finalizar calibração do motor', 'error');
+                    }
+                } catch (e) {
+                    console.error('Erro ao finalizar calibração do motor:', e);
+                    this.showMotorStatus('Erro ao finalizar calibração do motor', 'error');
+                }
+            },
+
+            async checkMotorCalibrationStatus() {
+                if (this.currentScreen !== 'motor') return;
+
+                try {
+                    const response = await fetch('/api/motor-calibration/status');
+                    const data = await response.json();
+                    this.updateMotorCalibrationUI(data);
+                } catch (e) {
+                    console.error('Erro ao verificar calibração do motor:', e);
+                }
+            },
+
+            updateMotorCalibrationUI(data) {
+                this.motorState = data.state || 'idle';
+
+                const currentPoint = Number(data.current_point || 1);
+                const totalPoints = Number(data.total_points || 3);
+                const targetRpm = Number(data.target_rpm || 0);
+                const previewRpm = Number(data.preview_rpm || 0);
+                const isCapturing = this.motorState === 'capturing' || data.capturing === true;
+
+                document.getElementById('motor-current-point').textContent = String(Math.min(currentPoint, totalPoints));
+                document.getElementById('motor-total-points').textContent = String(totalPoints);
+                document.getElementById('motor-target-rpm').textContent = targetRpm > 0 ? String(Math.round(targetRpm)) : '-';
+                document.getElementById('motor-preview-rpm').textContent = previewRpm > 0 ? previewRpm.toFixed(1) : '-';
+
+                const captureBtn = document.getElementById('motor-capture-btn');
+                const finishBtn = document.getElementById('motor-finish-btn');
+                const instructions = document.getElementById('motor-instructions');
+
+                if (isCapturing) {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = true;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = `Capturando ponto <strong>${Math.min(currentPoint, totalPoints)}</strong> (alvo <strong>${Math.round(targetRpm)} RPM</strong>)... aguarde.`;
+                } else if (this.motorState === 'wait_point') {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = `Ajuste o motor para <strong>${Math.round(targetRpm)} RPM</strong> e clique em capturar.`;
+                } else if (this.motorState === 'ready_to_finish') {
+                    captureBtn.classList.add('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.remove('hidden');
+                    instructions.innerHTML = 'Todos os pontos foram capturados. Clique em <strong>Concluir Calibração do Motor</strong>.';
+                } else if (this.motorState === 'done') {
+                    captureBtn.classList.add('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = 'Calibração do motor concluída.';
+                } else if (this.motorState === 'error') {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = 'Erro na calibração do motor. Reinicie e tente novamente.';
+                } else {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                }
+
+                this.isMotorCapturePending = isCapturing;
+
+                if (data.message) {
+                    this.showMotorStatus(data.message, this.motorState === 'error' ? 'error' : 'info');
+                }
+            },
+
+            showMotorStatus(message, type = 'info') {
+                const status = document.getElementById('motor-status');
+                status.style.display = 'block';
+                status.className = `status ${type}`;
+                status.textContent = message;
+            },
+
+            async resetMotorCalibration() {
+                if (confirm('Deseja reiniciar a calibração do motor?')) {
+                    try {
+                        await fetch('/api/motor-calibration/reset', { method: 'POST' });
+                        this.startMotorCalibration();
+                    } catch (e) {
+                        console.error('Erro ao resetar calibração do motor:', e);
+                        this.showMotorStatus('Erro ao resetar calibração do motor', 'error');
+                    }
                 }
             },
 

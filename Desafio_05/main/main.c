@@ -150,6 +150,9 @@ static void mqtt_init(void)
         .broker.address.uri = MQTT_BROKER_URI,
         .credentials.username = MQTT_USER,
         .credentials.authentication.password = MQTT_PASS,
+        .session.keepalive = 60,
+        .network.timeout_ms = 30000,
+        .network.reconnect_timeout_ms = 3000,
     };
 
     g_mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
@@ -171,7 +174,7 @@ static void mqtt_init(void)
         .batch_items = 10,
         .payload_bytes_max = 2048,
         .flush_period_ms = 5000,
-        .qos = 1,
+        .qos = 0,
         .retain = 0,
         .drop_oldest_on_full = true,
         .json_array_mode = true,
