@@ -111,14 +111,15 @@ static uint16_t _build_payload_locked(mqtt_send_module_ctx_t *ctx,
 
         // One telemetry item (controlled size)
         // Adjust rpm precision if you want.
-        char item[200];
+        char item[264];
         int item_len = snprintf(item, sizeof(item),
-                                "{\"ts\":%lld,\"front\":%u,\"back\":%u,\"state\":\"%s\",\"rpm\":%.2f}",
+                                "{\"ts\":%lld,\"front\":%u,\"back\":%u,\"state\":\"%s\",\"rpm\":%.2f,\"timestamp_rtc\":\"%s\"}",
                                 (long long)s->ts_ms,
                                 (unsigned)s->front_percent,
                                 (unsigned)s->back_percent,
                                 _state_to_str(s->state),
-                                (double)s->rpm);
+                                (double)s->rpm,
+                                s->timestamp_rtc);
 
         if (item_len <= 0 || (size_t)item_len >= sizeof(item)) {
             idx = (uint16_t)((idx + 1) % ctx->cfg.capacity_items);

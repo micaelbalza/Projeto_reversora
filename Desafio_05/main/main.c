@@ -515,8 +515,9 @@ static void telemetry_real_task(void *arg)
         esp_err_t rerr = rpm_counter_measure_rpm_blocking(rpm_window_s, &rpm);
         s.rpm = (rerr == ESP_OK) ? rpm : 0.0f;
 
-        char time_str[64];  // tamanho suficiente para "YYYY-MM-DD HH:MM:SS"
 
+        // trecho do RTC
+        char time_str[64];  // tamanho suficiente para "YYYY-MM-DD HH:MM:SS"
         if (ds3231_get_time(&ds_time) == ESP_OK) {
             snprintf(
                 time_str,
@@ -529,9 +530,19 @@ static void telemetry_real_task(void *arg)
                 ds_time.tm_min,
                 ds_time.tm_sec
             );
-
         } else {
             ESP_LOGE(TAG, "Falha ao ler DS3231! Verifique conexão I2C");
+            snprintf(
+                time_str,
+                sizeof(time_str),
+                "%04d-%02d-%02d %02d:%02d:%02d",
+                1900,
+                1,
+                1,
+                0,
+                0,
+                0
+            );
         }
 
         // monta o JSON e escreve no SD

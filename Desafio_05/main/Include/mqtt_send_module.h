@@ -26,6 +26,7 @@ typedef struct {
     uint8_t     back_percent;  // 0..100
     jh_state_t  state;         // MID/FRONT/BACK/NOT_CALIBRATED (do joystick_hall.h)
     float       rpm;           // RPM value
+    char timestamp_rtc[64];
 } mqtt_send_sample_t;
 
 typedef struct {
