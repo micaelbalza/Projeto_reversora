@@ -4,67 +4,67 @@
   "key": "core.restore_state",
   "data": [
     {
-      "state": {"entity_id":"conversation.home_assistant","state":"2026-03-11T19:46:19.565455+00:00","attributes":{"friendly_name":"Home Assistant","supported_features":1},"last_changed":"2026-03-13T17:00:34.948451+00:00","last_reported":"2026-03-13T17:00:34.948451+00:00","last_updated":"2026-03-13T17:00:34.948451+00:00","context":{"id":"01KKM292R47S1XAMB4164CMM6V","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"conversation.home_assistant","state":"2026-03-11T19:46:19.565455+00:00","attributes":{"friendly_name":"Home Assistant","supported_features":1},"last_changed":"2026-03-16T20:47:30.433263+00:00","last_reported":"2026-03-16T20:47:30.433263+00:00","last_updated":"2026-03-16T20:47:30.433263+00:00","context":{"id":"01KKW6ER41XPB968XBX718NW55","parent_id":null,"user_id":null}},
       "extra_data": null,
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"event.backup_automatic_backup","state":"unknown","attributes":{"event_types":["completed","failed","in_progress"],"event_type":null,"friendly_name":"Backup Automatic backup"},"last_changed":"2026-03-13T17:00:34.980956+00:00","last_reported":"2026-03-13T17:00:34.980956+00:00","last_updated":"2026-03-13T17:00:34.980956+00:00","context":{"id":"01KKM292S4F4RAK8TVTPCCV1RT","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"event.backup_automatic_backup","state":"unknown","attributes":{"event_types":["completed","failed","in_progress"],"event_type":null,"friendly_name":"Backup Automatic backup"},"last_changed":"2026-03-16T20:47:30.458267+00:00","last_reported":"2026-03-16T20:47:30.458267+00:00","last_updated":"2026-03-16T20:47:30.458267+00:00","context":{"id":"01KKW6ER4T9VM26QGF9104XR63","parent_id":null,"user_id":null}},
       "extra_data": {
         "last_event_type": null,
         "last_event_attributes": null
       },
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"person.desafio05","state":"unknown","attributes":{"editable":true,"id":"desafio05","device_trackers":[],"user_id":"c77be871e8134366b40b64b5f490041c","friendly_name":"desafio05"},"last_changed":"2026-03-13T17:00:35.192825+00:00","last_reported":"2026-03-13T17:00:40.610993+00:00","last_updated":"2026-03-13T17:00:40.610993+00:00","context":{"id":"01KKM29892SHG81H8RKK0MS3VH","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"person.desafio05","state":"unknown","attributes":{"editable":true,"id":"desafio05","device_trackers":[],"user_id":"c77be871e8134366b40b64b5f490041c","friendly_name":"desafio05"},"last_changed":"2026-03-16T20:47:30.634348+00:00","last_reported":"2026-03-16T20:47:31.779335+00:00","last_updated":"2026-03-16T20:47:31.779335+00:00","context":{"id":"01KKW6ESE3S8T45HX8D96FSCD6","parent_id":null,"user_id":null}},
       "extra_data": null,
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"tts.google_translate_en_com","state":"unknown","attributes":{"friendly_name":"Google Translate en com"},"last_changed":"2026-03-13T17:00:35.589439+00:00","last_reported":"2026-03-13T17:00:35.589439+00:00","last_updated":"2026-03-13T17:00:35.589439+00:00","context":{"id":"01KKM293C52E8KKRWNAP5NSWZ0","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"tts.google_translate_en_com","state":"unknown","attributes":{"friendly_name":"Google Translate en com"},"last_changed":"2026-03-16T20:47:30.887077+00:00","last_reported":"2026-03-16T20:47:30.887077+00:00","last_updated":"2026-03-16T20:47:30.887077+00:00","context":{"id":"01KKW6ERJ7M0XPAA3J2RSE6P6X","parent_id":null,"user_id":null}},
       "extra_data": null,
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"sensor.inclinacao_frontal_do_manche","state":"10","attributes":{"state_class":"measurement","unit_of_measurement":"%","icon":"mdi:arrow-up-bold","friendly_name":"Inclinação frontal do manche"},"last_changed":"2026-03-13T20:23:53.441161+00:00","last_reported":"2026-03-13T20:23:53.441161+00:00","last_updated":"2026-03-13T20:23:53.441161+00:00","context":{"id":"01KKMDXBB17A0QCNQVNQWNGDH2","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"sensor.inclinacao_frontal_do_manche","state":"58","attributes":{"state_class":"measurement","unit_of_measurement":"%","icon":"mdi:arrow-up-bold","friendly_name":"Inclinação frontal do manche"},"last_changed":"2026-03-16T20:51:52.182271+00:00","last_reported":"2026-03-16T20:51:52.182271+00:00","last_updated":"2026-03-16T20:51:52.182271+00:00","context":{"id":"01KKW6PQQPE15DTN5FT80W65VA","parent_id":null,"user_id":null}},
       "extra_data": {
-        "native_value": "10",
+        "native_value": "58",
         "native_unit_of_measurement": "%"
       },
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"sensor.inclinacao_traseira_do_manche","state":"6","attributes":{"state_class":"measurement","unit_of_measurement":"%","icon":"mdi:arrow-down-bold","friendly_name":"Inclinação traseira do manche"},"last_changed":"2026-03-13T20:23:53.441262+00:00","last_reported":"2026-03-13T20:23:53.441262+00:00","last_updated":"2026-03-13T20:23:53.441262+00:00","context":{"id":"01KKMDXBB1RZX6VHDT11GAAMCK","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"sensor.inclinacao_traseira_do_manche","state":"77","attributes":{"state_class":"measurement","unit_of_measurement":"%","icon":"mdi:arrow-down-bold","friendly_name":"Inclinação traseira do manche"},"last_changed":"2026-03-16T20:51:52.182250+00:00","last_reported":"2026-03-16T20:51:52.182250+00:00","last_updated":"2026-03-16T20:51:52.182250+00:00","context":{"id":"01KKW6PQQP2AV329QZ9E8XP6ND","parent_id":null,"user_id":null}},
       "extra_data": {
-        "native_value": "6",
+        "native_value": "77",
         "native_unit_of_measurement": "%"
       },
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"sensor.estado_do_manche","state":"","attributes":{"icon":"mdi:gamepad-round-outline","friendly_name":"Estado do manche"},"last_changed":"2026-03-13T20:38:12.843533+00:00","last_reported":"2026-03-13T20:38:12.843533+00:00","last_updated":"2026-03-13T20:38:12.843533+00:00","context":{"id":"01KKMEQJKBJHS01MP0QD35W0NA","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"sensor.estado_do_manche","state":"0","attributes":{"icon":"mdi:gamepad-round-outline","friendly_name":"Estado do manche"},"last_changed":"2026-03-16T20:51:52.182193+00:00","last_reported":"2026-03-16T20:51:52.182193+00:00","last_updated":"2026-03-16T20:51:52.182193+00:00","context":{"id":"01KKW6PQQPDQTC1N9SCWTXAWRW","parent_id":null,"user_id":null}},
       "extra_data": {
-        "native_value": "",
+        "native_value": "0",
         "native_unit_of_measurement": null
       },
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"sensor.rpm_atual_do_motor","state":"246.8","attributes":{"state_class":"measurement","unit_of_measurement":"rpm","icon":"mdi:gauge","friendly_name":"RPM atual do motor"},"last_changed":"2026-03-13T20:23:53.441319+00:00","last_reported":"2026-03-13T20:23:53.441319+00:00","last_updated":"2026-03-13T20:23:53.441319+00:00","context":{"id":"01KKMDXBB12N539K75V002KRYQ","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"sensor.rpm_atual_do_motor","state":"2547","attributes":{"state_class":"measurement","unit_of_measurement":"rpm","icon":"mdi:gauge","friendly_name":"RPM atual do motor"},"last_changed":"2026-03-16T20:51:52.182090+00:00","last_reported":"2026-03-16T20:51:52.182090+00:00","last_updated":"2026-03-16T20:51:52.182090+00:00","context":{"id":"01KKW6PQQP1HMCQNX7YWNY4NAQ","parent_id":null,"user_id":null}},
       "extra_data": {
-        "native_value": "246.8",
+        "native_value": "2547",
         "native_unit_of_measurement": "rpm"
       },
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
-      "state": {"entity_id":"sensor.data_de_recebimento_dos_dados","state":"1969-12-31T21:00:20.571000-03:00","attributes":{"icon":"mdi:clock-outline","friendly_name":"Data de recebimento dos dados"},"last_changed":"2026-03-13T20:23:53.441338+00:00","last_reported":"2026-03-13T20:23:53.441338+00:00","last_updated":"2026-03-13T20:23:53.441338+00:00","context":{"id":"01KKMDXBB1RBPYS67P9Q18B1P2","parent_id":null,"user_id":null}},
+      "state": {"entity_id":"sensor.data_de_recebimento_dos_dados","state":"1969-12-31T21:08:55.694000-03:00","attributes":{"icon":"mdi:clock-outline","friendly_name":"Data de recebimento dos dados"},"last_changed":"2026-03-16T20:51:52.182223+00:00","last_reported":"2026-03-16T20:51:52.182223+00:00","last_updated":"2026-03-16T20:51:52.182223+00:00","context":{"id":"01KKW6PQQPEMECTPNDVH05QGFD","parent_id":null,"user_id":null}},
       "extra_data": {
-        "native_value": "1969-12-31T21:00:20.571000-03:00",
+        "native_value": "1969-12-31T21:08:55.694000-03:00",
         "native_unit_of_measurement": null
       },
-      "last_seen": "2026-03-13T20:42:56.222954+00:00"
+      "last_seen": "2026-03-16T21:02:31.780383+00:00"
     },
     {
       "state": {"entity_id":"sensor.percentual_de_inclinacao_frontal_do_manche","state":"unknown","attributes":{"state_class":"measurement","unit_of_measurement":"%","icon":"mdi:arrow-up-bold","friendly_name":"Percentual de inclinação frontal do manche"},"last_changed":"2026-03-12T19:00:58.482079+00:00","last_reported":"2026-03-12T19:00:58.482079+00:00","last_updated":"2026-03-12T19:00:58.482079+00:00","context":{"id":"01KKHPRSZJ2DMTJXRVBD43ZX8D","parent_id":null,"user_id":null}},
