@@ -1,18 +1,8 @@
 {
-  "C_Cpp.intelliSenseEngine": "default",
-  "idf.openOcdConfigs": [
-    "board/esp32-wrover-kit-3.3v.cfg"
-  ],
-  "idf.port": "/dev/ttyUSB0",
-  "idf.currentSetup": "/home/micaelbalza/esp/v5.5.1/esp-idf",
-  "idf.customExtraVars": {
+    "idf.currentSetup": "/home/antonio-filho/.espressif/v5.5.2/esp-idf",
+    "idf.port": "/dev/ttyUSB0",
+    "idf.flashType": "UART",
+    "idf.customExtraVars": {
     "IDF_TARGET": "esp32"
-  },
-  "clangd.path": "/home/micaelbalza/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
-  "clangd.arguments": [
-    "--background-index",
-    "--query-driver=**",
-    "--compile-commands-dir=/home/micaelbalza/Documents/Embarcatech/Desafio/ESP32/Desafio_05/build"
-  ],
-  "idf.flashType": "UART"
+    },
 }

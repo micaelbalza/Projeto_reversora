@@ -1,14 +1,12 @@
 idf_component_register(
-    SRCS 
+    SRCS
         "main.c"
-        "wifi_manager.c"
-        "calibration.c"
-        "web_server.c"
+        "Include/mqtt_send_module.c"
         "Include/joystick_hall.c"
         "Include/rpm_pulse_counter.c"
-        "Include/mqtt_send_module.c"
-    INCLUDE_DIRS 
-        "."
+        "Include/micro_sd.c"
+        "Include/ds3231.c"
+    INCLUDE_DIRS
         "Include"
     REQUIRES 
         esp_wifi
@@ -21,8 +19,11 @@ idf_component_register(
         esp_system
         freertos
         driver
-        mqtt
-        esp_timer
+        fatfs 
+        sdmmc 
+        vfs 
+        esp_driver_spi
+        lwip
     PRIV_REQUIRES
         spi_flash
         json
