@@ -1,0 +1,36 @@
+sensor:
+  - name: "Inclinação frontal do manche"
+    state_topic: "ha/desafio05/micael.balza/telemetry_batch"
+    unit_of_measurement: "%"
+    state_class: measurement
+    icon: "mdi:arrow-up-bold"
+    value_template: "{{ value_json[-1].front if value_json | length > 0 else 0 }}"
+
+  - name: "Inclinação traseira do manche"
+    state_topic: "ha/desafio05/micael.balza/telemetry_batch"
+    unit_of_measurement: "%"
+    state_class: measurement
+    icon: "mdi:arrow-down-bold"
+    value_template: "{{ value_json[-1].back if value_json | length > 0 else 0 }}"
+
+  - name: "Estado do manche"
+    state_topic: "ha/desafio05/micael.balza/telemetry_batch"
+    icon: "mdi:gamepad-round-outline"
+    value_template: "{{ value_json[-1].state if value_json | length > 0 else 0 }}"
+
+  - name: "RPM atual do motor"
+    state_topic: "ha/desafio05/micael.balza/telemetry_batch"
+    unit_of_measurement: "rpm"
+    state_class: measurement
+    icon: "mdi:gauge"
+    value_template: "{{ value_json[-1].rpm if value_json | length > 0 else 0 }}"
+
+  - name: "Data de recebimento dos dados"
+    state_topic: "ha/desafio05/micael.balza/telemetry_batch"
+    icon: "mdi:clock-outline"
+    value_template: >
+      {% if value_json | length > 0 %}
+        {{ (value_json[-1].ts / 1000) | timestamp_local }}
+      {% else %}
+        unknown
+      {% endif %}
