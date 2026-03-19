@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibrador de Reversora</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+            padding: 30px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border: 1px solid #81c784;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+            border: 1px solid #ef5350;
+        }
+
+        .status.warning {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ffb74d;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .step.completed .step-number {
+            background: #4caf50;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .step.active .step-label,
+        .step.completed .step-label {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .instruction-text {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .wifi-status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .wifi-status.connected {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .wifi-status.disconnected {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .wifi-status.connecting {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .wifi-status.connected .status-dot {
+            background: #4caf50;
+        }
+
+        .wifi-status.disconnected .status-dot {
+            background: #f44336;
+        }
+
+        .wifi-status.connecting .status-dot {
+            background: #ff9800;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Calibrador</h1>
+            <p>Sistema de calibração da reversora</p>
+        </div>
+
+        <!-- Tela de Configuração WiFi -->
+        <div id="wifi-screen" class="screen active">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 18px;">Configurar WiFi</h2>
+            
+            <div id="wifi-status" class="wifi-status connecting">
+                <div style="display: flex; align-items: center;">
+                    <div class="status-dot"></div>
+                    <span id="wifi-status-text">Verificando...</span>
+                </div>
+            </div>
+
+            <div id="wifi-config" class="hidden">
+                <form id="wifi-form">
+                    <div class="form-group">
+                        <label for="ssid">Rede WiFi (SSID)</label>
+                        <input type="text" id="ssid" placeholder="Nome da rede" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" placeholder="Senha WiFi" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Conectar</button>
+                </form>
+
+                <button onclick="app.resetWiFi()" class="btn btn-secondary">Resetar Credenciais</button>
+            </div>
+
+            <div id="wifi-waiting" style="text-align: center;">
+                <div class="loading"></div>
+                <p style="color: #999; margin-top: 15px; font-size: 14px;">Buscando credenciais salvas...</p>
+            </div>
+
+            <div id="wifi-connected" class="hidden">
+                <div style="text-align: center; color: #4caf50;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">✓</div>
+                    <p style="color: #666; margin-bottom: 15px;">Conectado com sucesso!</p>
+                    <p style="color: #999; font-size: 14px;">IP: <span id="wifi-ip">-</span></p>
+                </div>
+                <button onclick="app.goToCalibration()" class="btn btn-primary" style="margin-top: 20px;">Iniciar Calibração</button>
+            </div>
+        </div>
+
+        <!-- Tela de Calibração -->
+        <div id="calibration-screen" class="screen">
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+            </div>
+
+            <div class="step-indicator">
+                <div id="step-1" class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Neutro</div>
+                </div>
+                <div id="step-2" class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Avante</div>
+                </div>
+                <div id="step-3" class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Ré</div>
+                </div>
+                <div id="step-4" class="step">
+                    <div class="step-number">✓</div>
+                    <div class="step-label">Conclusão</div>
+                </div>
+            </div>
+
+            <div id="calib-instructions" class="instruction-text">
+                Posicione a reversora em <strong>NEUTRO</strong> e clique em confirmar.
+            </div>
+
+            <button id="calib-btn" class="btn btn-primary">Confirmar</button>
+            <button onclick="app.resetCalibration()" class="btn btn-secondary">Reiniciar</button>
+
+            <div id="calib-status" class="status info" style="display: none;"></div>
+        </div>
+
+        <!-- Tela de Calibração do Motor -->
+        <div id="motor-screen" class="screen">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 18px;">Calibração do Motor</h2>
+
+            <div id="motor-instructions" class="instruction-text">
+                Ajuste o motor para <strong><span id="motor-target-rpm">1000</span> RPM</strong> e clique em capturar.
+            </div>
+
+            <div id="motor-live" class="status info" style="margin-bottom: 12px;">
+                RPM atual: <strong><span id="motor-preview-rpm">-</span></strong>
+            </div>
+
+            <div id="motor-point-info" class="info-text" style="margin-bottom: 14px; text-align: center;">
+                Ponto <span id="motor-current-point">1</span> de <span id="motor-total-points">3</span>
+            </div>
+
+            <button id="motor-capture-btn" class="btn btn-primary">Capturar Ponto</button>
+            <button id="motor-finish-btn" class="btn btn-primary hidden">Concluir Calibração do Motor</button>
+            <button onclick="app.resetMotorCalibration()" class="btn btn-secondary">Reiniciar Motor</button>
+
+            <div id="motor-status" class="status info" style="display: none;"></div>
+        </div>
+
+        <!-- Tela de Sucesso -->
+        <div id="success-screen" class="screen">
+            <div style="text-align: center;">
+                <div class="success-icon">✨</div>
+                <h2 style="color: #4caf50; margin-bottom: 10px;">Calibração Completa!</h2>
+                <p style="color: #666; margin-bottom: 20px;">O sistema foi calibrado com sucesso e está pronto para uso.</p>
+                
+                <button onclick="app.returnToWiFi()" class="btn btn-primary">Voltar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Aplicação principal
+        const app = {
+            currentScreen: 'wifi',
+            wifiState: 'checking',
+            calibState: 'idle',
+            motorState: 'idle',
+            isMotorCapturePending: false,
+
+            // Inicialização
+            init() {
+                console.log('Iniciando aplicação');
+                this.checkWiFiStatus();
+                this.setupEventListeners();
+                
+                // Atualiza status periodicamente
+                setInterval(() => this.checkWiFiStatus(), 2000);
+                setInterval(() => this.checkCalibrationStatus(), 1000);
+                setInterval(() => this.checkMotorCalibrationStatus(), 1000);
+            },
+
+            setupEventListeners() {
+                const form = document.getElementById('wifi-form');
+                if (form) {
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.connectWiFi();
+                    });
+                }
+
+                const calibBtn = document.getElementById('calib-btn');
+                if (calibBtn) {
+                    calibBtn.addEventListener('click', () => this.nextCalibrationStep());
+                }
+
+                const motorCaptureBtn = document.getElementById('motor-capture-btn');
+                if (motorCaptureBtn) {
+                    motorCaptureBtn.addEventListener('click', () => this.captureMotorPoint());
+                }
+
+                const motorFinishBtn = document.getElementById('motor-finish-btn');
+                if (motorFinishBtn) {
+                    motorFinishBtn.addEventListener('click', () => this.finishMotorCalibration());
+                }
+            },
+
+            // Gerenciamento de telas
+            showScreen(screenName) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                const screen = document.getElementById(screenName + '-screen');
+                if (screen) {
+                    screen.classList.add('active');
+                    this.currentScreen = screenName;
+                }
+            },
+
+            // WiFi
+            async checkWiFiStatus() {
+                if (this.currentScreen !== 'wifi') return;
+
+                try {
+                    const response = await fetch('/api/wifi/status');
+                    const data = await response.json();
+
+                    this.updateWiFiStatus(data.state, data.ip || '-');
+                } catch (e) {
+                    console.error('Erro ao verificar WiFi:', e);
+                }
+            },
+
+            updateWiFiStatus(state, ip) {
+                const statusEl = document.getElementById('wifi-status');
+                const statusText = document.getElementById('wifi-status-text');
+                const configDiv = document.getElementById('wifi-config');
+                const waitingDiv = document.getElementById('wifi-waiting');
+                const connectedDiv = document.getElementById('wifi-connected');
+
+                this.wifiState = state;
+
+                statusEl.className = 'wifi-status ' + state;
+
+                switch (state) {
+                    case 'sta_connected':
+                        statusText.textContent = 'Conectado ao WiFi';
+                        configDiv.classList.add('hidden');
+                        waitingDiv.classList.add('hidden');
+                        connectedDiv.classList.remove('hidden');
+                        document.getElementById('wifi-ip').textContent = ip;
+                        break;
+
+                    case 'ap_mode':
+                        statusText.textContent = 'Modo Ponto de Acesso (AP)';
+                        configDiv.classList.remove('hidden');
+                        waitingDiv.classList.add('hidden');
+                        connectedDiv.classList.add('hidden');
+                        break;
+
+                    case 'connecting':
+                        statusText.textContent = 'Conectando...';
+                        configDiv.classList.add('hidden');
+                        waitingDiv.classList.remove('hidden');
+                        connectedDiv.classList.add('hidden');
+                        break;
+
+                    default:
+                        statusText.textContent = 'Desconectado';
+                        configDiv.classList.remove('hidden');
+                        waitingDiv.classList.add('hidden');
+                        connectedDiv.classList.add('hidden');
+                }
+            },
+
+            async connectWiFi() {
+                const ssid = document.getElementById('ssid').value;
+                const password = document.getElementById('password').value;
+
+                if (!ssid || !password) {
+                    alert('SSID e senha são obrigatórios');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/wifi/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ssid, password })
+                    });
+
+                    const data = await response.json();
+                    console.log('Resposta WiFi:', data);
+                } catch (e) {
+                    console.error('Erro ao conectar:', e);
+                    alert('Erro ao enviar configuração');
+                }
+            },
+
+            async resetWiFi() {
+                if (confirm('Deseja resetar as credenciais e voltar ao modo AP?')) {
+                    try {
+                        await fetch('/api/wifi/reset', { method: 'POST' });
+                    } catch (e) {
+                        console.error('Erro ao resetar:', e);
+                    }
+                }
+            },
+
+            // Calibração
+            goToCalibration() {
+                this.showScreen('calibration');
+                this.startCalibration();
+            },
+
+            async startCalibration() {
+                try {
+                    const response = await fetch('/api/calibration/start', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Calibração iniciada:', data);
+                } catch (e) {
+                    console.error('Erro ao iniciar:', e);
+                }
+            },
+
+            async nextCalibrationStep() {
+                const state = this.calibState;
+                let endpoint = '';
+
+                switch (state) {
+                    case 'wait_neutral':
+                        endpoint = '/api/calibration/neutral';
+                        break;
+                    case 'wait_forward':
+                        endpoint = '/api/calibration/forward';
+                        break;
+                    case 'wait_reverse':
+                        endpoint = '/api/calibration/reverse';
+                        break;
+                    case 'wait_finish':
+                        endpoint = '/api/calibration/finish';
+                        break;
+                    default:
+                        return;
+                }
+
+                try {
+                    const response = await fetch(endpoint, { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Resposta:', data);
+                } catch (e) {
+                    console.error('Erro:', e);
+                }
+            },
+
+            async checkCalibrationStatus() {
+                if (this.currentScreen !== 'calibration') return;
+
+                try {
+                    const response = await fetch('/api/calibration/status');
+                    const data = await response.json();
+
+                    this.updateCalibrationUI(data);
+                } catch (e) {
+                    console.error('Erro ao verificar calibração:', e);
+                }
+            },
+
+            updateCalibrationUI(data) {
+                const state = data.state;
+                const progress = data.progress;
+
+                // Atualiza barra de progresso
+                document.getElementById('progress-fill').style.width = progress + '%';
+
+                // Mapeia estados para fases
+                let stepNumber = 1;
+                let instructions = '';
+                let nextState = '';
+
+                switch (state) {
+                    case 'AGUARDANDO_NEUTRA':
+                        stepNumber = 1;
+                        instructions = 'Posicione a reversora em <strong>NEUTRO</strong> e clique em confirmar.';
+                        nextState = 'wait_neutral';
+                        break;
+                    case 'AGUARDANDO_AVANTE':
+                        stepNumber = 2;
+                        instructions = 'Posicione a reversora em <strong>AVANTE</strong> e clique em confirmar.';
+                        nextState = 'wait_forward';
+                        break;
+                    case 'AGUARDANDO_RE':
+                        stepNumber = 3;
+                        instructions = 'Posicione a reversora em <strong>RÉ</strong> e clique em confirmar.';
+                        nextState = 'wait_reverse';
+                        break;
+                    case 'FINALIZANDO':
+                        stepNumber = 4;
+                        instructions = 'Finalizando calibração... Clique para completar.';
+                        nextState = 'wait_finish';
+                        break;
+                    case 'CONCLUIDA':
+                        this.goToMotorCalibration();
+                        return;
+                    default:
+                        instructions = 'Carregando...';
+                }
+
+                this.calibState = nextState;
+
+                // Atualiza instruções
+                document.getElementById('calib-instructions').innerHTML = instructions;
+
+                // Atualiza steps
+                for (let i = 1; i <= 4; i++) {
+                    const step = document.getElementById('step-' + i);
+                    if (i < stepNumber) {
+                        step.classList.add('completed');
+                        step.classList.remove('active');
+                    } else if (i === stepNumber) {
+                        step.classList.add('active');
+                        step.classList.remove('completed');
+                    } else {
+                        step.classList.remove('active', 'completed');
+                    }
+                }
+            },
+
+            async resetCalibration() {
+                if (confirm('Deseja reiniciar a calibração?')) {
+                    this.goToCalibration();
+                }
+            },
+
+            // Calibração do motor
+            goToMotorCalibration() {
+                this.showScreen('motor');
+                this.startMotorCalibration();
+            },
+
+            async startMotorCalibration() {
+                try {
+                    const response = await fetch('/api/motor-calibration/start', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Calibração do motor iniciada:', data);
+                    this.showMotorStatus(data.message || 'Calibração do motor iniciada', 'info');
+                } catch (e) {
+                    console.error('Erro ao iniciar calibração do motor:', e);
+                    this.showMotorStatus('Erro ao iniciar calibração do motor', 'error');
+                }
+            },
+
+            async captureMotorPoint() {
+                if (this.isMotorCapturePending) return;
+
+                try {
+                    this.isMotorCapturePending = true;
+                    this.showMotorStatus('Iniciando captura do ponto...', 'info');
+
+                    const response = await fetch('/api/motor-calibration/capture', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Captura motor:', data);
+
+                    this.updateMotorCalibrationUI(data);
+                    this.showMotorStatus(data.message || 'Captura iniciada', data.status === 'ok' ? 'info' : 'error');
+                } catch (e) {
+                    console.error('Erro ao capturar ponto do motor:', e);
+                    this.showMotorStatus('Erro ao capturar ponto do motor', 'error');
+                    this.isMotorCapturePending = false;
+                }
+            },
+
+            async finishMotorCalibration() {
+                try {
+                    const response = await fetch('/api/motor-calibration/finish', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('Finalização motor:', data);
+
+                    if (data.status === 'ok') {
+                        this.showMotorStatus(`Calibração concluída. PPR final: ${Number(data.final_ppr || 0).toFixed(3)}`, 'success');
+                        this.showScreen('success');
+                    } else {
+                        this.showMotorStatus(data.message || 'Erro ao finalizar calibração do motor', 'error');
+                    }
+                } catch (e) {
+                    console.error('Erro ao finalizar calibração do motor:', e);
+                    this.showMotorStatus('Erro ao finalizar calibração do motor', 'error');
+                }
+            },
+
+            async checkMotorCalibrationStatus() {
+                if (this.currentScreen !== 'motor') return;
+
+                try {
+                    const response = await fetch('/api/motor-calibration/status');
+                    const data = await response.json();
+                    this.updateMotorCalibrationUI(data);
+                } catch (e) {
+                    console.error('Erro ao verificar calibração do motor:', e);
+                }
+            },
+
+            updateMotorCalibrationUI(data) {
+                this.motorState = data.state || 'idle';
+
+                const currentPoint = Number(data.current_point || 1);
+                const totalPoints = Number(data.total_points || 3);
+                const targetRpm = Number(data.target_rpm || 0);
+                const previewRpm = Number(data.preview_rpm || 0);
+                const isCapturing = this.motorState === 'capturing' || data.capturing === true;
+
+                document.getElementById('motor-current-point').textContent = String(Math.min(currentPoint, totalPoints));
+                document.getElementById('motor-total-points').textContent = String(totalPoints);
+                document.getElementById('motor-target-rpm').textContent = targetRpm > 0 ? String(Math.round(targetRpm)) : '-';
+                document.getElementById('motor-preview-rpm').textContent = previewRpm > 0 ? previewRpm.toFixed(1) : '-';
+
+                const captureBtn = document.getElementById('motor-capture-btn');
+                const finishBtn = document.getElementById('motor-finish-btn');
+                const instructions = document.getElementById('motor-instructions');
+
+                if (isCapturing) {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = true;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = `Capturando ponto <strong>${Math.min(currentPoint, totalPoints)}</strong> (alvo <strong>${Math.round(targetRpm)} RPM</strong>)... aguarde.`;
+                } else if (this.motorState === 'wait_point') {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = `Ajuste o motor para <strong>${Math.round(targetRpm)} RPM</strong> e clique em capturar.`;
+                } else if (this.motorState === 'ready_to_finish') {
+                    captureBtn.classList.add('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.remove('hidden');
+                    instructions.innerHTML = 'Todos os pontos foram capturados. Clique em <strong>Concluir Calibração do Motor</strong>.';
+                } else if (this.motorState === 'done') {
+                    captureBtn.classList.add('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = 'Calibração do motor concluída.';
+                } else if (this.motorState === 'error') {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                    instructions.innerHTML = 'Erro na calibração do motor. Reinicie e tente novamente.';
+                } else {
+                    captureBtn.classList.remove('hidden');
+                    captureBtn.disabled = false;
+                    finishBtn.classList.add('hidden');
+                }
+
+                this.isMotorCapturePending = isCapturing;
+
+                if (data.message) {
+                    this.showMotorStatus(data.message, this.motorState === 'error' ? 'error' : 'info');
+                }
+            },
+
+            showMotorStatus(message, type = 'info') {
+                const status = document.getElementById('motor-status');
+                status.style.display = 'block';
+                status.className = `status ${type}`;
+                status.textContent = message;
+            },
+
+            async resetMotorCalibration() {
+                if (confirm('Deseja reiniciar a calibração do motor?')) {
+                    try {
+                        await fetch('/api/motor-calibration/reset', { method: 'POST' });
+                        this.startMotorCalibration();
+                    } catch (e) {
+                        console.error('Erro ao resetar calibração do motor:', e);
+                        this.showMotorStatus('Erro ao resetar calibração do motor', 'error');
+                    }
+                }
+            },
+
+            returnToWiFi() {
+                this.showScreen('wifi');
+            }
+        };
+
+        // Inicia aplicação quando DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>

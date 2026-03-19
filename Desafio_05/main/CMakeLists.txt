@@ -8,13 +8,16 @@ idf_component_register(
         "Include/ds3231.c"
     INCLUDE_DIRS
         "Include"
-    REQUIRES
-        nvs_flash
-        esp_timer
-        esp_event
-        esp_netif
+    REQUIRES 
         esp_wifi
-        mqtt
+        esp_http_server
+        esp_netif
+        nvs_flash
+        esp_event
+        esp_common
+        esp_rom
+        esp_system
+        freertos
         driver
         fatfs 
         sdmmc 
@@ -23,4 +26,9 @@ idf_component_register(
         lwip
     PRIV_REQUIRES
         spi_flash
+        json
 )
+
+# Incorpora arquivo HTML como asset binário
+target_add_binary_data(${COMPONENT_LIB} "index.html" BINARY)
+

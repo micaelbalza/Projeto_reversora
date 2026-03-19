@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "homeassistant.exposed_entities",
+  "data": {
+    "assistants": {},
+    "exposed_entities": {
+      "conversation.home_assistant": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "zone.home": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sun.sun": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sensor.percentual_de_inclinacao_frontal_do_manche": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sensor.percentual_de_inclinacao_traseira_do_manche": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sensor.estado_do_manche": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sensor.rpm_atual_do_motor": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sensor.data_de_recebimento_dos_dados": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sensor.inclinacao_frontal_do_manche": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      },
+      "sensor.inclinacao_traseira_do_manche": {
+        "assistants": {
+          "conversation": {
+            "should_expose": false
+          }
+        }
+      }
+    }
+  }
+}

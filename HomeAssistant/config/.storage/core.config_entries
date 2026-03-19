@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "minor_version": 5,
+  "key": "core.config_entries",
+  "data": {
+    "entries": [
+      {"created_at":"2026-03-11T18:31:32.650823+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"sun","entry_id":"01KKF2P6HA551VQBAYBQR9PVBJ","minor_version":1,"modified_at":"2026-03-11T18:31:32.650825+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"import","subentries":[],"title":"Sun","unique_id":null,"version":1},
+      {"created_at":"2026-03-11T18:31:33.126538+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"go2rtc","entry_id":"01KKF2P706X5W9M9SFCF0BEFT6","minor_version":1,"modified_at":"2026-03-11T18:31:33.126540+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"system","subentries":[],"title":"go2rtc","unique_id":null,"version":1},
+      {"created_at":"2026-03-11T18:31:33.135265+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"backup","entry_id":"01KKF2P70FZ93S8B2HWVDZF1F6","minor_version":1,"modified_at":"2026-03-11T18:31:33.135266+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"system","subentries":[],"title":"Backup","unique_id":null,"version":1},
+      {"created_at":"2026-03-11T18:32:53.818544+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"shopping_list","entry_id":"01KKF2RNST5JPXXEYXED5YDWHR","minor_version":1,"modified_at":"2026-03-11T18:32:53.818546+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","subentries":[],"title":"Shopping list","unique_id":"shopping_list","version":1},
+      {"created_at":"2026-03-11T18:32:53.824207+00:00","data":{"language":"en","tld":"com"},"disabled_by":null,"discovery_keys":{},"domain":"google_translate","entry_id":"01KKF2RNT05879H46JDF0THHGF","minor_version":1,"modified_at":"2026-03-11T18:32:53.824209+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","subentries":[],"title":"Google Translate text-to-speech","unique_id":null,"version":1},
+      {"created_at":"2026-03-11T18:32:53.900520+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"radio_browser","entry_id":"01KKF2RNWC9JAQSRMY4GBH37CF","minor_version":1,"modified_at":"2026-03-11T18:32:53.900523+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","subentries":[],"title":"Radio Browser","unique_id":null,"version":1},
+      {"created_at":"2026-03-11T18:32:53.908847+00:00","data":{"track_home":true},"disabled_by":null,"discovery_keys":{},"domain":"met","entry_id":"01KKF2RNWM08W583A3Y0RZYTS2","minor_version":1,"modified_at":"2026-03-11T18:32:53.908848+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","subentries":[],"title":"Home","unique_id":null,"version":1},
+      {"created_at":"2026-03-11T18:50:41.311732+00:00","data":{"broker":"mqtt.iot.natal.br","password":"desafio05.laica","port":1883,"username":"desafio05"},"disabled_by":null,"discovery_keys":{},"domain":"mqtt","entry_id":"01KKF3S88ZJ9JVWNZCZSH458PS","minor_version":1,"modified_at":"2026-03-11T18:50:41.311735+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"user","subentries":[],"title":"mqtt.iot.natal.br","unique_id":null,"version":2}
+    ]
+  }
+}
